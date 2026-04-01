@@ -1,10 +1,12 @@
 # Heavy directories
 fastq/
 fastq_trimmed/
+salmon_output
 
 # Heavy files
 *.fastq
 *.fastq.gz
+*.scf
 
 # History files
 .Rhistory
