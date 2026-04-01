@@ -6,7 +6,6 @@ salmon_output
 # Heavy files
 *.fastq
 *.fastq.gz
-*.scf
 
 # History files
 .Rhistory
