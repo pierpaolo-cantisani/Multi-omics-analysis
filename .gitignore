@@ -1,7 +1,8 @@
 # Heavy directories
 fastq/
 fastq_trimmed/
-salmon_output
+salmon_output/
+references/
 
 # Heavy files
 *.fastq
