@@ -3,6 +3,7 @@ fastq/
 fastq_trimmed/
 salmon_output/
 references/
+salmon_index_hg38_49/
 
 # Heavy files
 *.fastq
