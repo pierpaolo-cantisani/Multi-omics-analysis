@@ -8,7 +8,7 @@ not_trimmed/
 
 # Heavy files
 *.fastq
-*.fastq.gz
+*.gz
 
 # Low relevance files
 *fastp.html
