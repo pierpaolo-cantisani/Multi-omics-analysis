@@ -100,7 +100,7 @@ pca_df <- merge(pca_df, metadata, by = "row.names")
 pca_df$Row.names <- NULL
 
 #ggplot
-ggplot(pca_df, aes(x = PC1, y = PC2, shape = replicate, color = infection)) +
+print(ggplot(pca_df, aes(x = PC1, y = PC2, shape = replicate, color = infection)) +
   geom_point(size = 3) +                                                                                    #Adds the data as points
   labs(title = "Explorative analysis - PCA",
        x = paste0("PCA1 (", round(100 * summary(pca)$importance[2,1], 1), "% of the variance)"),    #Title and labels
@@ -109,7 +109,7 @@ ggplot(pca_df, aes(x = PC1, y = PC2, shape = replicate, color = infection)) +
   theme(legend.title = element_blank(), plot.title = element_text(hjust = 0.5)) +                   #Formatting title
   scale_shape_manual(values= c(15:19, 8)) +                                                            #Setting points shapes. From 15 on shapes are full inside
   scale_color_manual(values = c("CTRL" = "red", "TB" ="darkblue")) +                                #Setting colors
-  guides(fill = guide_legend(override.aes = list(shape = 21)))                                      #Adding legend
+  guides(fill = guide_legend(override.aes = list(shape = 21))))                                      #Adding legend
 
 
 ## Heatmap
@@ -141,13 +141,13 @@ counts_norm_long <- counts_norm %>%
 counts_norm_long$Sample <- factor(counts_norm_long$Sample, levels = paste0("S", 1:12))
 
 #Boxplot
-ggplot(counts_norm_long, aes(x = Sample, y = expr)) +
+print(ggplot(counts_norm_long, aes(x = Sample, y = expr)) +
   geom_boxplot() +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
   labs(title = "Explorative analysis - Expression boxplots",
        x = "Sample",
-       y = "VST gene expression")
+       y = "VST gene expression"))
 
 ## Results
 ## PCA -> Strong Clustering for condition (infection). There is also a slight clustering for sample (on PCA2): paired design is correct.
@@ -185,7 +185,7 @@ write.csv(sign_DE_res, out_csv, row.names = FALSE)
 res_shrunk <- lfcShrink(dds, coef = "infection_TB_vs_CTRL", type = "apeglm")
 res_shrunk_df <- as.data.frame(res_shrunk)
 
-ggplot(res_shrunk_df, aes(x = log2FoldChange, y = -log10(padj))) +
+print(ggplot(res_shrunk_df, aes(x = log2FoldChange, y = -log10(padj))) +
   geom_point(alpha = 0.5) +
   geom_hline(yintercept = -log10(0.0001), linetype = "dashed", color = "blue") +
   geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "blue") +
@@ -193,7 +193,7 @@ ggplot(res_shrunk_df, aes(x = log2FoldChange, y = -log10(padj))) +
                                     res_shrunk_df$padj < 0.0001 & 
                                     abs(res_shrunk_df$log2FoldChange) > 1, ], color = "red") +
   theme_minimal() +
-  labs(title = "Volcano plot: infection", x = "log2 Fold Change", y = "-log10(adj pvalue)")
+  labs(title = "Volcano plot: infection", x = "log2 Fold Change", y = "-log10(adj pvalue)"))
 
 
 
@@ -221,7 +221,7 @@ sum(novel)
 #5738/5794 have an "ENSG" hugo symbol. This generally means these are novel/unmapped genes. Therefore they can be discarded. 
 #The other 56 genes must be further analyzed
 missing <- not_in_symbol[!novel ,]
-print(missing$hugo_symbol)
+#print(missing$hugo_symbol)
 #These are all ncRNAs. Therefore they can be discarded too.
 #Now checking how many of the significantly DE genes remain after discarding novel genes and ncRNAs
 sign_GO_genes <- intersect(sign_DE_res$hugo_symbol, all_symbols) #4499. This will be the gene set for ORA
@@ -265,14 +265,14 @@ ORA_down_BP <-  enrichGO(gene = down_sign_DE_res$hugo_symbol,
                          qvalueCutoff = 0.05)
 
 
-barplot(ORA_all_BP, showCategory = 10, title = "Biological Process - ORA: all genes")
-dotplot(ORA_all_BP, showCategory = 10, title = "Biological Process - ORA: all genes")
+print(barplot(ORA_all_BP, showCategory = 10, title = "Biological Process - ORA: all genes"))
+print(dotplot(ORA_all_BP, showCategory = 10, title = "Biological Process - ORA: all genes"))
 
-barplot(ORA_up_BP, showCategory = 10, title = "Biological Process - ORA: upregulated genes")
-dotplot(ORA_up_BP, showCategory = 10, title = "Biological Process - ORA: upregulated genes")
+print(barplot(ORA_up_BP, showCategory = 10, title = "Biological Process - ORA: upregulated genes"))
+print(dotplot(ORA_up_BP, showCategory = 10, title = "Biological Process - ORA: upregulated genes"))
 
-barplot(ORA_down_BP, showCategory = 10, title = "Biological Process - ORA: downregulated genes")
-dotplot(ORA_down_BP, showCategory = 10, title = "Biological Process - ORA: downregulated genes")
+print(barplot(ORA_down_BP, showCategory = 10, title = "Biological Process - ORA: downregulated genes"))
+print(dotplot(ORA_down_BP, showCategory = 10, title = "Biological Process - ORA: downregulated genes"))
 
 #Results:
 length(ORA_all_BP@result$ID)           #5629 terms
@@ -291,8 +291,8 @@ ORA_up_unique <- ORA_up_BP
 ORA_up_unique@result <- ORA_up_BP@result %>% filter(ID %in% unique_up)
 ORA_down_unique <- ORA_down_BP
 ORA_down_unique@result <- ORA_down_BP@result %>% filter(ID %in% unique_down)
-barplot(ORA_up_unique, showCategory = 10, title = "Biological Process - ORA: unique upregulated genes")
-barplot(ORA_down_unique, showCategory = 10, title = "Biological Process - ORA: unique downregulated genes")
+print(barplot(ORA_up_unique, showCategory = 10, title = "Biological Process - ORA: unique upregulated genes"))
+print(barplot(ORA_down_unique, showCategory = 10, title = "Biological Process - ORA: unique downregulated genes"))
 
 
 ##GSEA
@@ -312,9 +312,9 @@ gsea_res <- gseGO(
 )
 
 #Plot
-dotplot(gsea_res, showCategory = 15, title = "Biological Process - GSEA")
+print(dotplot(gsea_res, showCategory = 15, title = "Biological Process - GSEA"))
 p <- ridgeplot(gsea_res, showCategory = 15)         #library(ggridges)
-p + ggtitle("Biological Process - GSEA")
+print(p + ggtitle("Biological Process - GSEA"))
 
 
 dev.off()
