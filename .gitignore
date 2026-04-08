@@ -3,11 +3,16 @@ fastq/
 fastq_trimmed/
 salmon_output/
 references/
-salmon_index_hg38_49/
+trimmed/
+not_trimmed/
 
 # Heavy files
 *.fastq
 *.fastq.gz
+
+# Low relevance files
+*fastp.html
+*fastp.json
 
 # History files
 .Rhistory
