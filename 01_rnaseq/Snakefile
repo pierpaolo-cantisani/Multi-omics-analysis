@@ -2,7 +2,9 @@
 
 # Reading SRR codes 
 SRR_codes = open("SRR_Acc_List.txt").read().splitlines()
-#Variable for file names
+# Variable for merging:
+runs_per_sample = [SRR_codes[i:i+4] for i in range(0, len(SRR_codes), 4)]
+# Variable for file names
 SAMPLES = range(1, 13)
 
 
@@ -15,6 +17,31 @@ rule all:
         "fastqc_results/full_qc_report_trimmed.html"
 
 
+## rules:
+
+
+rule get_files:
+    output: temp("fastq/{srr}.fastq.gz")
+    shell:
+        '''
+        prefetch {wildcards.srr} -O fastq/
+        fasterq-dump fastq/{wildcards.srr} --outdir fastq/
+        gzip fastq/{wildcards.srr}.fastq
+        '''
+
+
+rule merge_files:
+    input:
+        lambda wildcards: expand("fastq/{srr}.fastq.gz", srr = runs_per_sample[int(wildcards.i)-1])
+    output:
+        temp("fastq/sample_{i}_merged.fastq.gz")
+    shell: 
+        '''
+          echo "Merging sample {wildcards.i}"
+          zcat {input} | gzip > {output}
+        '''
+
+
 rule fastqc_raw:
     input:
         "fastq/sample_{i}_merged.fastq.gz"
@@ -22,7 +49,8 @@ rule fastqc_raw:
         html = "fastqc_results/not_trimmed/sample_{i}_fastqc.html",
         zip = "fastqc_results/not_trimmed/sample_{i}_fastqc.zip"
     shell:
-        "fastqc -o fastqc_results/not_trimmed {input}"
+        "fastqc -t {threads} -o fastqc_results/not_trimmed {input}"
+    threads: 2
 
 
 rule multiqc_raw:
@@ -36,14 +64,15 @@ rule multiqc_raw:
 
 rule trimming:
     input: 
-        temp("fastq/sample_{i}_merged.fastq.gz")
+        "fastq/sample_{i}_merged.fastq.gz"
     output:
         fastq = "fastq_trimmed/sample_{i}_trimmed.fastq.gz",
-        html = "fastq_trimmed/sample_{i}_fastp.json",
+        html = "fastq_trimmed/sample_{i}_fastp.html",
         json = "fastq_trimmed/sample_{i}_fastp.json"
     shell:
         '''
           fastp \
+            -w {threads} \
             --in1 "{input}" \
             --out1 "{output.fastq}" \
             --html "{output.html}" \
@@ -51,6 +80,7 @@ rule trimming:
             --qualified_quality_phred 20 \
             --length_required 40
         '''
+    threads: 2
 
 
 rule fastqc_trimmed:
@@ -60,7 +90,8 @@ rule fastqc_trimmed:
         html = "fastqc_results/trimmed/sample_{i}_trimmed_fastqc.html",
         zip = "fastqc_results/trimmed/sample_{i}_trimmed_fastqc.zip"
     shell:
-         "fastqc -o fastqc_results/trimmed {input}"
+         "fastqc -t {threads} -o fastqc_results/trimmed {input}"
+    threads: 2
 
 
 
@@ -77,7 +108,7 @@ rule quantification:
     input: 
         "fastq_trimmed/sample_{i}_trimmed.fastq.gz"
     output: 
-        "salmon_output/sample_{i}_quant"
+        directory("salmon_output/sample_{i}_quant")
     shell:
         '''
         echo "Quantifying sample: {wildcards.i}"
@@ -85,56 +116,29 @@ rule quantification:
         salmon quant -l A \
             -i references/salmon_index_hg38_49 \
             -r {input} \
-            -p 2 \
+            -p {threads} \
             --validateMappings \
             -o {output}
         '''
-
-
-
-
-
-
-
-rule get_files:
-    output: 
-        
-    shell:
-        '''
-        #Downloading
-        prefetch {wildcards.samples}
-        fasterq-dump {wildcards.samples} --outdir fastq/
-
-        #Compressing
-        gzip fastq/{wildcards.samples}.fastq
-
-        # Removing the prefetch directory
-        rm -r {wildcards.samples}
-        '''
-
-
-rule merge_files:
-    input:
+    threads: 2
 
 
 
 
 #### Important steps outside of the flow:
-#Before:
+# Before running the Snakefile:
 
 #run setup.sh
-
 #conda activate rna_seq
 
 
-#After:
-## Renaming directories on bash
+# After running the Snakefile:
+
+#Rename directories from terminal like this:
 
 #n=1
 #for ((i=1; i<13; i+=2)); do
-
 #  mv "$HOME/Multi-omics-analysis/01_rnaseq/salmon_output/sample_${i}_quant" "$HOME/Multi-omics-analysis/01_rnaseq/salmon_output/rep_${n}_TB_quant"
 #  mv "$HOME/Multi-omics-analysis/01_rnaseq/salmon_output/sample_$((i+1))_quant" "$HOME/Multi-omics-analysis/01_rnaseq/salmon_output/rep_${n}_NI_quant"
 #  ((n++))
-
 #done

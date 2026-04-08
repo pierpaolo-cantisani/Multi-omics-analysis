@@ -7,19 +7,19 @@
 # SRR codes are in "SRR_Acc_List.txt", obtained from the SRA website.
 
 # Downloading
-while read id; do
+#while read id; do
 #  echo "Downloading and compressing sample: $id"
 
   #Downloading
-  prefetch "$id" -O ~/Multi-omics-analysis/01_rnaseq/fastq
-  fasterq-dump \
-   "$id" --outdir ~/Multi-omics-analysis/01_rnaseq/fastq
+#  prefetch "$id" -O ~/Multi-omics-analysis/01_rnaseq/fastq
+#  fasterq-dump \
+#   "$id" --outdir ~/Multi-omics-analysis/01_rnaseq/fastq
   #Compressing
-  gzip ~/Multi-omics-analysis/01_rnaseq/fastq/${id}.fastq
+#  gzip ~/Multi-omics-analysis/01_rnaseq/fastq/${id}.fastq
 
   # Removing the prefetch directory
-  rm -r ~/Multi-omics-analysis/01_rnaseq/fastq/${id}
-done < ~/Multi-omics-analysis/01_rnaseq/SRR_Acc_List.txt
+#  rm -r ~/Multi-omics-analysis/01_rnaseq/fastq/${id}
+#done < ~/Multi-omics-analysis/01_rnaseq/SRR_Acc_List.txt
 
 
 # Merging
