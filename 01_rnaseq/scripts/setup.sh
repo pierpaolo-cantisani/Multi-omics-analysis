@@ -3,9 +3,9 @@
 ### Creating conda environments ###
 
 #Environment for the preprocessing on bash:
-conda env create -f ~/Multi-omics-analysis/01_rnaseq/rna_seq.yml
+conda env create -f ~/Multi-omics-analysis/01_rnaseq/envs/rna_seq.yml
 #Environment for the DE analysis on R:
-conda env create -f ~/Multi-omics-analysis/01_rnaseq/r_DE_analysis.yml
+conda env create -f ~/Multi-omics-analysis/01_rnaseq/envs/r_DE_analysis.yml
 
 
 ### Creating directories ###
@@ -22,7 +22,7 @@ wget -P ~/Multi-omics-analysis/01_rnaseq/references/ \
 salmon index \
   -t ~/Multi-omics-analysis/01_rnaseq/references/gencode.v49.transcripts.fa.gz \
   -i ~/Multi-omics-analysis/01_rnaseq/references/salmon_index_hg38_49 \
-  --threads 4
+  --threads 2
 
 
 ### Downloading the reference for the R analysis:
