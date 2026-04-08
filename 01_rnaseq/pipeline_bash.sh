@@ -3,7 +3,7 @@
 #Externally activate environment:
 #conda activate rna_seq
 
-### 1. Downloading and merging files ###
+### 1. Downloading and merging fastq files ###
  SRR codes are in "SRR_Acc_List.txt", obtained from the SRA website.
 
 # Downloading
