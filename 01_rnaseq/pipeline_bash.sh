@@ -4,22 +4,22 @@
 #conda activate rna_seq
 
 ### 1. Downloading and merging files ###
-# SRR codes are in "SRR_Acc_List.txt", obtained from the SRA website.
+ SRR codes are in "SRR_Acc_List.txt", obtained from the SRA website.
 
 # Downloading
-#while read id; do
-#  echo "Downloading and compressing sample: $id"
+while read id; do
+  echo "Downloading and compressing sample: $id"
 
   #Downloading
-#  prefetch "$id" -O ~/Multi-omics-analysis/01_rnaseq/fastq
-#  fasterq-dump \
-#   "$id" --outdir ~/Multi-omics-analysis/01_rnaseq/fastq
+  prefetch "$id" -O ~/Multi-omics-analysis/01_rnaseq/fastq
+  fasterq-dump \
+   "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${id}" --outdir ~/Multi-omics-analysis/01_rnaseq/fastq
   #Compressing
-#  gzip ~/Multi-omics-analysis/01_rnaseq/fastq/${id}.fastq
+  gzip ~/Multi-omics-analysis/01_rnaseq/fastq/${id}.fastq
 
   # Removing the prefetch directory
-#  rm -r ~/Multi-omics-analysis/01_rnaseq/fastq/${id}
-#done < ~/Multi-omics-analysis/01_rnaseq/SRR_Acc_List.txt
+  rm -r ~/Multi-omics-analysis/01_rnaseq/fastq/${id}
+done < ~/Multi-omics-analysis/01_rnaseq/SRR_Acc_List.txt
 
 
 # Merging
@@ -41,12 +41,6 @@ for ((i=0; i<${#srr_codes[@]}; i+=4)); do
    rm "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${srr_codes[i]}.fastq.gz" "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${srr_codes[i+1]}.fastq.gz" "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${srr_codes[i+2]}.fastq.gz" "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${srr_codes[i+3]}.fastq.gz"
 done
 
-#cat \
-#      "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${srr_codes[i]}.fastq.gz" \
-#      "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${srr_codes[i+1]}.fastq.gz" \
-#      "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${srr_codes[i+2]}.fastq.gz" \
- #     "$HOME/Multi-omics-analysis/01_rnaseq/fastq/${srr_codes[i+3]}.fastq.gz" \
-#      > "$HOME/Multi-omics-analysis/01_rnaseq/fastq/sample_${j}_merged.fastq.gz"
 
 ### 2. Quality Control
 
@@ -64,8 +58,8 @@ for ((i=1; i<13; i+=1)); do
     -w 2 \
     --in1 "$HOME/Multi-omics-analysis/01_rnaseq/fastq/sample_${i}_merged.fastq.gz" \
     --out1 "$HOME/Multi-omics-analysis/01_rnaseq/fastq_trimmed/sample_${i}_trimmed.fastq.gz" \
-    --html "$HOME/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_${i}_fastp.html" \
-    --json "$HOME/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_${i}_fastp.json" \
+    --html "$HOME/Multi-omics-analysis/01_rnaseq/fastq_trimmed/sample_${i}_fastp.html" \
+    --json "$HOME/Multi-omics-analysis/01_rnaseq/fastq_trimmed/sample_${i}_fastp.json" \
     --qualified_quality_phred 20 \
     --length_required 40
 

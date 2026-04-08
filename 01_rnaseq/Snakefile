@@ -22,11 +22,14 @@ rule all:
 
 rule get_files:
     output: temp("fastq/{srr}.fastq.gz")
+    wildcard_constraints:
+        srr = "|".join(SRR_codes)
     shell:
         '''
         prefetch {wildcards.srr} -O fastq/
         fasterq-dump fastq/{wildcards.srr} --outdir fastq/
         gzip fastq/{wildcards.srr}.fastq
+        rm -r fastq/{wildcards.srr}
         '''
 
 
@@ -48,9 +51,10 @@ rule fastqc_raw:
     output:
         html = "fastqc_results/not_trimmed/sample_{i}_fastqc.html",
         zip = "fastqc_results/not_trimmed/sample_{i}_fastqc.zip"
+    threads: 2
     shell:
         "fastqc -t {threads} -o fastqc_results/not_trimmed {input}"
-    threads: 2
+
 
 
 rule multiqc_raw:
@@ -69,6 +73,7 @@ rule trimming:
         fastq = "fastq_trimmed/sample_{i}_trimmed.fastq.gz",
         html = "fastq_trimmed/sample_{i}_fastp.html",
         json = "fastq_trimmed/sample_{i}_fastp.json"
+    threads: 2
     shell:
         '''
           fastp \
@@ -80,7 +85,6 @@ rule trimming:
             --qualified_quality_phred 20 \
             --length_required 40
         '''
-    threads: 2
 
 
 rule fastqc_trimmed:
@@ -89,10 +93,9 @@ rule fastqc_trimmed:
     output:
         html = "fastqc_results/trimmed/sample_{i}_trimmed_fastqc.html",
         zip = "fastqc_results/trimmed/sample_{i}_trimmed_fastqc.zip"
+    threads: 2
     shell:
          "fastqc -t {threads} -o fastqc_results/trimmed {input}"
-    threads: 2
-
 
 
 rule multiqc_trimmed:
@@ -109,6 +112,7 @@ rule quantification:
         "fastq_trimmed/sample_{i}_trimmed.fastq.gz"
     output: 
         directory("salmon_output/sample_{i}_quant")
+    threads: 2
     shell:
         '''
         echo "Quantifying sample: {wildcards.i}"
@@ -120,7 +124,6 @@ rule quantification:
             --validateMappings \
             -o {output}
         '''
-    threads: 2
 
 
 
