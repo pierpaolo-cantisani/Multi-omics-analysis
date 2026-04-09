@@ -145,15 +145,19 @@ rule quantification:
 
 rule Rename_dir:
     input:
-        expand("salmon_output/sample_{i}_quant/quant.sf", i=SAMPLES)
+        expand("salmon_output/sample_{i}_quant", i=SAMPLES)
     output:
         expand("salmon_output/rep_{n}_{cond}_quant/quant.sf", n=REPS, cond=CONDS)
     run:
         import os
         n = 1
         for j in range(1, 13, 2):
-            os.rename(f"salmon_output/sample_{j}_quant",   f"salmon_output/rep_{n}_TB_quant")
-            os.rename(f"salmon_output/sample_{j+1}_quant", f"salmon_output/rep_{n}_NI_quant")
+            src_tb = f"salmon_output/sample_{j}_quant"
+            src_ni = f"salmon_output/sample_{j+1}_quant"
+            if os.path.exists(src_tb):
+                os.rename(src_tb, f"salmon_output/rep_{n}_TB_quant")
+            if os.path.exists(src_ni):
+                os.rename(src_ni, f"salmon_output/rep_{n}_NI_quant")
             n += 1
 
 
