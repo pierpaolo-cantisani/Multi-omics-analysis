@@ -180,7 +180,7 @@ dependencies:
   - salmon=1.11.4=h7f96273_0
   - spectra=0.0.11=pyhd8ed1ab_2
   - sqlite=3.52.0=hbc0de68_0
-  - sra-tools=3.4.1=h4304569_0
+  - sra-tools=3.0.10
   - tbb=2022.3.0=h8d10470_1
   - tiktoken=0.12.0=py314h67fec18_3
   - tk=8.6.13=noxft_h366c992_103
