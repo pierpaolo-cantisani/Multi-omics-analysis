@@ -5,6 +5,7 @@ salmon_output/
 references/
 trimmed/
 not_trimmed/
+trimmed_data*/
 
 # Heavy files
 *.fastq
