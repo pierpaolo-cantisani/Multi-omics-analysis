@@ -14,6 +14,7 @@ files <- unlist(snakemake@input)
 out_csv <- snakemake@output[[1]]
 out_pdf <- snakemake@output[[2]]
 out_session <- snakemake@output[[3]]
+out_universe <- snakemake@output[[4]]
 
 
 #Opening pdf with graphs
@@ -69,6 +70,16 @@ dds <- DESeqDataSetFromTximport(tx_matrix,
 #Filtering: keeping only genes with at least 10 counts in half of the samples
 keep <- rowSums(counts(dds) >= 10) >= 6
 dds <- dds[keep, ]
+
+#Exporting the universe:
+RNAseq_universe <- as.data.frame(rownames(dds))
+RNAseq_universe <- RNAseq_universe %>% rename(ENSEMBL = `rownames(dds)`)
+RNAseq_universe <- merge(RNAseq_universe, gene_map,
+                by.x = "ENSEMBL",
+                by.y = "ensembl_id",
+                all.x = TRUE)
+write.csv(RNAseq_universe$hugo_symbol, out_universe, row.names = FALSE)
+
 
 ##DESeq2:
 dds <- DESeq(dds)
