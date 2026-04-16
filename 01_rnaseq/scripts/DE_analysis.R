@@ -71,16 +71,6 @@ dds <- DESeqDataSetFromTximport(tx_matrix,
 keep <- rowSums(counts(dds) >= 10) >= 6
 dds <- dds[keep, ]
 
-#Exporting the universe:
-RNAseq_universe <- as.data.frame(rownames(dds))
-RNAseq_universe <- RNAseq_universe %>% rename(ENSEMBL = `rownames(dds)`)
-RNAseq_universe <- merge(RNAseq_universe, gene_map,
-                by.x = "ENSEMBL",
-                by.y = "ensembl_id",
-                all.x = TRUE)
-write.csv(RNAseq_universe$hugo_symbol, out_universe, row.names = FALSE)
-
-
 ##DESeq2:
 dds <- DESeq(dds)
 
@@ -189,6 +179,10 @@ DE_res <- DE_res %>%
 sign_DE_res <- DE_res %>% filter(padj < 0.0001 & abs(log2FoldChange) > 1)
 #5265 DE genes for very stringent conditions: there is very strong variability
 write.csv(sign_DE_res, out_csv, row.names = FALSE)
+
+#Exporting the universe
+RNAseq_universe <- DE_res[, c("hugo_symbol", "log2FoldChange")]
+write.csv(RNAseq_universe, out_universe, row.names = FALSE)
 
 
 ##Visualization: volcano plot
