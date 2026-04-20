@@ -3,11 +3,11 @@ library(ggplot2)
 library(eulerr)
 library(tidyr)
 library(cowplot)
-#library(rGREAT)
 
 
 setwd("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis")
 pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration analysis Graphs.pdf")
+
 
 ### !!! Explanation of statistics:
 #This analysis answer the following questions (p-value < 0.05 means YES):
@@ -27,9 +27,10 @@ pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration anal
 
 
 
-# !! For now i'm not considering gene length in all the analyses. In some cases this may apply a bias
-# !! Adjustment for multiple testing NOT DONE. Must do this
-
+# Adjustment for multiple testing NOT DONE: all biological questions are separate
+# !! Fare Volcano plot meth.diff(x) vs log2FC(y): 4 quadranti
+# !! Hyper vs Hypo: not considered for now! Add to up/down (section 2.1)
+# !! Se c'è tempo: Aggiungere asterischi/legends ai grafici
 
 
 
@@ -44,10 +45,9 @@ DM_sites <- read.csv("DM_sites.csv")
 
 ## Obtaining the universe N: 
 #Importing RNA-seq universe (all genes considered for the DESeq2 analysis)
-RNAseq_universe <- read.csv("RNAseq_universe.csv", col.names = c("SYMBOL", "log2FoldChange"))
+RNAseq_universe <- read.csv("RNAseq_universe.csv", col.names = c("SYMBOL", "log2FoldChange", "stat"))
 #Importing WGBS universe (all genes that had methylated sites with coverage > 5)
 WGBS_universe <- read.csv("WGBS_universe.csv", col.names = "SYMBOL")
-
 # Universe N: all genes considered in both differential analyses
 universe <- intersect(na.omit(RNAseq_universe$SYMBOL), 
                       na.omit(WGBS_universe$SYMBOL))
@@ -112,7 +112,7 @@ n_rel_int_DM <- as.numeric(length(rel_intersect_genes))
 rel_DM_percent <- as.numeric(n_rel_int_DM*100/n_rel_DM)
 rel_percent <- length(rel_intersect_genes)*100/length(universe)
 final_table <- data.frame("All relevant" = c(n_rel_DM, n_rel_int_DM, paste0(round(rel_DM_percent, 1), "%"), paste0(rel_percent, "%"), hyp_intersect, "/"))
-row.names(final_table) <- c("DM genes", "DM ∩ DE genes", "fraction of DM", "fraction of universe", "p-value (Significance of intersection)", "p-value (Trend towards region type)")
+row.names(final_table) <- c("DM genes", "DM ∩ DE genes", "fraction of intersected", "fraction of universe", "p-value (Significance of intersection)", "p-value (Trend towards region type)")
 
 
 
@@ -132,62 +132,6 @@ plot(fit,
      edges = TRUE,
      main = paste0("Overlap: DE and DM genes (universe = ", length(universe), " genes)")
 )
-
-
-## Graph 2: Bar chart — DM genes per region, split by DE/non-DE ##
-
-# Building a df with counts per region
-region_df <- rel_DM %>%
-  mutate(region = case_when(
-    grepl("Promoter", annotation) ~ "Promoter",
-    grepl("^Exon", annotation)    ~ "Exon",
-    grepl("^Intron", annotation)  ~ "Intron",
-    grepl("^3' UTR", annotation)  ~ "3' UTR",
-    grepl("^5' UTR", annotation)  ~ "5' UTR",
-    TRUE                          ~ "Other"
-  )) %>%
-  distinct(SYMBOL, region) %>%                          # 1 gene per region (no duplicates)
-  mutate(is_DE = SYMBOL %in% rel_intersect_genes,
-         status = ifelse(is_DE, "DM ∩ DE", "DM only"))
-
-# Counts
-region_counts <- region_df %>%
-  group_by(region, status) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  complete(region, status, fill = list(n = 0)) %>%
-  group_by(region) %>%
-  mutate(total = sum(n),
-         pct_DE = ifelse(
-           any(status == "DM ∩ DE"),
-           n[status == "DM ∩ DE"] / total * 100,
-           0
-         )) %>%
-  ungroup() %>%
-  # Removing empty regions
-  filter(total > 0) %>%
-  mutate(region = reorder(region, -total))
-
-ggplot(region_counts, aes(x = region, y = n, fill = status)) +
-  geom_bar(stat = "identity", position = "stack", width = 0.6) +
-  geom_text(
-    data = region_counts %>% distinct(region, total),
-    aes(x = region, y = total, label = paste0("n=", total)),
-    inherit.aes = FALSE,
-    vjust = -0.4, size = 3.5
-  ) +
-  scale_fill_manual(values = c("DM ∩ DE" = "#92C592", "DM only" = "#D6604D"),
-                    name = NULL) +
-  labs(
-    title = "DM genes per genomic region",
-    subtitle = "Fraction DM ∩ DE",
-    x = "Genomic region",
-    y = "Number of genes"
-  ) +
-  theme_classic(base_size = 13) +
-  theme(legend.position = "top",
-        plot.title = element_text(face = "bold"))
-
-
 
 
 
@@ -251,10 +195,10 @@ rel_DM_up_genes   <- all_up$SYMBOL[all_up$SYMBOL %in% rel_genes]
 
 ## Hypergeometric test on all rel DM sites
 #How significant is the trend of all DM genes towards being upregulated
-N <- as.numeric(length(rel_genes))                            #172          # universe: all genes used for analyses
-m <- as.numeric(length(unique(rel_DM_up_genes)))              #136          # all upregulated genes (also non DE)
-k <- as.numeric(length(rel_intersect_genes))                  #99           # all DM genes
-q <- as.numeric(length(rel_intersect_up_genes))               #93           # upregulated DM genes
+N <- as.numeric(length(rel_genes))                            #172          # universe: all rel DM genes
+m <- as.numeric(length(unique(rel_DM_up_genes)))              #136          # all DM relevant upregulated genes (also non DE)
+k <- as.numeric(length(rel_intersect_genes))                  #99           # all intersected DM genes
+q <- as.numeric(length(rel_intersect_up_genes))               #93           # upregulated intersected DM genes
 ## Ho un urna con N palline. Ce ne sono m rosse e n=N-m bianche. 
 ## Qual è la probabilità che pescandone k ne ottengo q rosse?
 
@@ -302,7 +246,10 @@ final_expr_table <- data.frame("Upregulated" = c(hyp_DM_up, hyp_up, hyp_fin_up),
 row.names(final_expr_table) <- c("All DM (p-value)", "DM ∩ DE (p-value)", "DM ∩ DE vs All DM (p-value)")
 
 
-## Graph 3: Up/Down regulation across DE, DM, and DE∩DM genes ##
+##2.1.c: Association: UP/DOWN DE vs Hyper/Hypo DM
+
+
+## Graph 2: Up/Down regulation across DE, DM, and DE∩DM genes ##
 
 upreg_summary <- data.frame(
   group = c("All DE genes", "All DM genes", "Relevant DM genes", "DM ∩ DE genes"),
@@ -452,7 +399,7 @@ final_table <- cbind(final_table, "3' UTR" = c(as.numeric(length(UTR3_genes)), a
 
 
 
-## Graph 4 ##
+## Graph 3 ##
 # Building counts
 region_summary <- data.frame(
   region = c("Promoter", "Exon", "Intron", "3' UTR"),
@@ -515,7 +462,7 @@ print(p_region)
 
 
 
-## 2.3: The more the sites are methylated, the more the gene is up/down regulated? (Correlation between magnitude of methyl and up/down regulation)
+## 2.3: The more the sites are differentially methylated (in magnitude), the more the gene is up/down regulated? (Correlation between magnitude of methyl and up/down regulation)
 
 #Considering unique genes: meth will be the mean of the sites
 gene_level_df <- all_intersect_df %>%
@@ -585,7 +532,6 @@ multi_DM_genes <- unique(multi_DM$SYMBOL)
 multi_rel_intersect_genes <- intersect(multi_DM_genes, rel_intersect_genes)
 
 ## Hypergeometric test: Are genes with 2 or more (non intergenic) methyl sites more likely to be DE than those with 1?
-#Promoter
 N <- as.numeric(length(rel_genes))                              # all rel DM genes
 m <- as.numeric(length(rel_intersect_genes))                    # all intersecting DM/DE genes
 k <- as.numeric(length(multi_DM_genes))                         # genes with 2 or more DM sites
@@ -593,70 +539,77 @@ q <- as.numeric(length(multi_rel_intersect_genes))              # intersecting g
 hyp_multi <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
 
 #Adding to table:
-final_table <- rbind(final_table, "p-value (multi DM genes are more likely DE)" = c(hyp_multi, "/", "/", "/", "/", "/"))
+final_table <- rbind(final_table, "p-value (multi DM genes)" = c(hyp_multi, "/", "/", "/", "/", "/"))
+
+
 
 ## Graph 5: Probability of being DE depending on number of DM sites ##
-# Building groups
-single_DM_genes <- setdiff(rel_genes, multi_DM_genes)
-single_intersect_genes <- intersect(single_DM_genes, rel_intersect_genes)
 # Summary dataframe
-prob_summary <- data.frame(
-  group = c("1 DM site", "≥2 DM sites"),
-  DE    = c(length(single_intersect_genes),
-            length(multi_rel_intersect_genes)),
-  non_DE = c(length(single_DM_genes) - length(single_intersect_genes),
-             length(multi_DM_genes) - length(multi_rel_intersect_genes))
+single_DM <- rel_DM %>% filter(SYMBOL %in% DM_num$gene[DM_num$frequency < 2])
+single_DM_genes <- unique(single_DM$SYMBOL)
+single_rel_intersect_genes <- setdiff(rel_intersect_genes, multi_rel_intersect_genes)
+dm_summary <- data.frame(
+  group    = c("All DM genes", "DM ∩ DE genes"),
+  single   = c(length(single_DM_genes),  length(single_rel_intersect_genes)),
+  multi    = c(length(multi_DM_genes),   length(multi_rel_intersect_genes))
 )
+
 # Long format
-prob_long <- prob_summary %>%
-  pivot_longer(cols = c(DE, non_DE),
-               names_to  = "status",
+dm_long <- dm_summary %>%
+  pivot_longer(cols = c(single, multi),
+               names_to  = "dm_class",
                values_to = "n") %>%
   group_by(group) %>%
   mutate(
-    total = sum(n),
-    pct   = n / total * 100,
-    group = factor(group, levels = c("1 DM site", "≥2 DM sites")),
-    status = factor(status,
-                    levels = c("DE", "non_DE"),
-                    labels = c("DE", "Not DE"))
+    total    = sum(n),
+    pct      = n / total * 100,
+    group    = factor(group, levels = c("All DM genes", "DM ∩ DE genes")),
+    dm_class = factor(dm_class,
+                      levels = c("single", "multi"),
+                      labels = c("1 DM site", "≥2 DM sites"))
   )
-# Tot for bar
-totals_prob <- prob_long %>%
+
+# Totals for bar annotation
+totals_dm <- dm_long %>%
   distinct(group, total)
+
+# Colors
+dm_colors <- c(
+  "1 DM site"   = "#4393C3",
+  "≥2 DM sites" = "#D6604D"
+)
+
 # Plot
-p_prob <- ggplot(prob_long, aes(x = group, y = pct, fill = status)) +
+p_prob <- ggplot(dm_long, aes(x = group, y = pct, fill = dm_class)) +
   geom_bar(stat = "identity", width = 0.5) +
   geom_text(
-    data = totals_prob,
-    aes(x = group, y = 103, label = paste0("n = ", total)),
+    data = totals_dm,
+    aes(x = group, y = 102, label = paste0("n = ", total)),
     inherit.aes = FALSE,
     size = 4, fontface = "bold"
   ) +
-  scale_fill_manual(
-    values = c("DE" = "#92C592", "Not DE" = "#D6604D"),
-    name   = NULL
-  ) +
+  scale_fill_manual(values = dm_colors, name = "DM sites per gene") +
   scale_y_continuous(
     limits = c(0, 108),
-    breaks = seq(0, 100, 25),
+    breaks = seq(0, 100, 20),
     labels = function(x) paste0(x, "%")
   ) +
-  geom_hline(yintercept = 50, linetype = "dashed",
-             color = "grey40", linewidth = 0.5) +
   labs(
-    title    = "Probability of differential expression",
-    subtitle = "Comparison between single and multiple DM site genes",
+    title    = "DM site multiplicity",
+    subtitle = "All DM genes vs DM ∩ DE genes",
     x        = NULL,
     y        = "Percentage of genes"
   ) +
   theme_classic(base_size = 13) +
   theme(
-    legend.position = "top",
-    plot.title = element_text(face = "bold")
+    legend.position  = "right",
+    plot.title       = element_text(face = "bold"),
+    axis.text.x      = element_text(size = 12)
   )
 
 print(p_prob)
+
+
 
 
 
@@ -687,64 +640,32 @@ sites_abs_fc_cor <- cor.test(
 
 # Adding to table
 final_table <- rbind(final_table,
-                     "Rho corr (sites vs log2FC)" = c(sites_fc_cor$estimate, "/", "/", "/", "/", "/"),
-                     "p-value corr (sites vs log2FC)" = c(sites_fc_cor$p.value, "/", "/", "/", "/", "/"),
                      "Rho corr (sites vs |log2FC|)" = c(sites_abs_fc_cor$estimate, "/", "/", "/", "/", "/"),
-                     "p-value corr (sites vs |log2FC|)" = c(sites_abs_fc_cor$p.value, "/", "/", "/", "/", "/"))
+                     "p-value corr (sites vs |log2FC|)" = c(sites_abs_fc_cor$p.value, "/", "/", "/", "/", "/"),
+                     "Rho corr (sites vs log2FC)" = c(sites_fc_cor$estimate, "/", "/", "/", "/", "/"),
+                     "p-value corr (sites vs log2FC)" = c(sites_fc_cor$p.value, "/", "/", "/", "/", "/"))
 
-# Graph 6: Scatter plot ofnumber of DM sites vs log2FC
+# Graph 6: Scatter plot of number of DM sites vs log2FC
+#Magnitude
+p_sites_fc_abs <- ggplot(sites_fc_df, aes(x = n_DM_sites, y = abs(log2FoldChange))) +
+  geom_jitter(width = 0.12, height = 0, alpha = 0.7) +
+  geom_smooth(method = "lm") +
+  labs(title = "Correlation between number of DM sites and expression: magnitude",
+       x = "Number of DM sites",
+       y = "|log2FoldChange|") +
+  theme_classic(base_size = 13) +
+  theme(plot.title = element_text(face = "bold"))
+#Direction
 p_sites_fc <- ggplot(sites_fc_df, aes(x = n_DM_sites, y = log2FoldChange)) +
   geom_jitter(width = 0.12, height = 0, alpha = 0.7) +
   geom_smooth(method = "lm") +
-  labs(
-    title = "Correlation between number of DM sites and expression",
-    subtitle = paste0(
-      "Spearman rho = ", round(as.numeric(sites_fc_cor$estimate), 3),
-      " | p = ", signif(sites_fc_cor$p.value, 3),
-      " | |log2FC| rho = ", round(as.numeric(sites_abs_fc_cor$estimate), 3),
-      " | p = ", signif(sites_abs_fc_cor$p.value, 3)
-    ),
-    x = "Number of DM sites per gene",
-    y = "log2 Fold Change"
-  ) +
+  labs(title = "Correlation between number of DM sites and expression: direction",
+       x = "Number of DM sites",
+       y = "log2FoldChange") +
   theme_classic(base_size = 13) +
   theme(plot.title = element_text(face = "bold"))
 
-print(p_sites_fc)
-
+plot_grid(p_sites_fc_abs, p_sites_fc, nrow = 2, ncol = 1)
 
 
 dev.off()
-
-
-
-
-## Next to consider:
-# Recheck the flow and all statistics Check graphs and results: Cosa ho ottenuto?
-# Scrivere il flow dell'analisi statistica così com'è. Capire se va tolto o aggiunto qualcosa.
-# Se c'è tempo: Aggiungere asterischi in qualche modo??
-
-## Su un altro script R separato
-# - GO terms comparison
-# - (maybe) intergenic regions
-
-
-
-
-
-
-
-
-### +: Intergenic regions analysis
-
-gr_intergenic <- as(peakAnno_df, "GRanges")[peakAnno_df$annotation == "Distal Intergenic"]
-job <- submitGreatJob(gr_intergenic, species = "hg38")
-# Results table
-res <- getEnrichmentTables(job)
-
-# Associated genes:
-inter_genes_df <- as.data.frame(getRegionGeneAssociations(job))
-# Associated GO terms (filtered by significance)
-go_bp <- res[["GO Biological Process"]]
-go_bp_sig <- go_bp[go_bp$Binom_Adjp_BH < 0.05, ]
-go_bp_sig <- go_bp_sig[order(go_bp_sig$Binom_Adjp_BH), ]  # ordina per p-value
