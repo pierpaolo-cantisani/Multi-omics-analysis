@@ -9,28 +9,29 @@ setwd("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis")
 pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration analysis Graphs.pdf")
 
 
-### !!! Explanation of statistics:
+### !!! Summary:
 #This analysis answer the following questions (p-value < 0.05 means YES):
 
-## -- final_table --
-# (Significance of intersection): Are the genes (in the category) which possess DM sites also differentially expressed (more than normal)?
+## Section 1
+# (Significance of intersection): Are the DM genes also differentially expressed (significantly)?
+## Section 2
+# All DM (p-value): Do DM genes have a trend towards up/down regulation?
+# DM ∩ DE DM (p-value): Do DM ∩ DE genes have a trend towards up/down regulation?
+# DM ∩ DE vs All DM (p-value): Do DM ∩ DE have a significantly higher trend towards up/down regulation compared to All DM?
+# Hypomethylated DM: Do hypomethylatedDM genes have a trend towards up/down regulation?
+# Hypermethylated DM: Do hypermethylated DM genes have a trend towards up/down regulation?
+## Section 3
 # (Trend towards region type): Are the genes with DM sites in this region more differentially expressed compared to other regions?
-# corr (meth vs upreg): Is the magnitude of the methylation (in the category) correlated to the genes up/down regulation?
-# (multi DM genes are more likely DE) : Are genes with 2 or more (non intergenic) methyl sites more likely to be DE than those with 1?
+## Section 4
+# (meth vs expr): Is the magnitude of the methylation (in the category) correlated to the genes up/down regulation?
+## Section 5
+# (multi DM genes) : Are genes with 2 or more (non intergenic) methylation sites more likely to be DE than those with 1?
+## Section 6
 # (sites vs log2FC): Do the number of DM sites in a gene correlate with its expression (making it more likely DE)?
 # (sites vs |log2FC|): Do the number of DM sites in a DE gene correlate with the magnitude of its differential expression?
 
-## -- final_expr_table --
-# All DM regulation (p-value): Do DM genes have a trend towards up/down regulation?
-# DM ∩ DE DM regulation (p-value): Do DM ∩ DE genes have a trend towards up/down regulation?
-# DM ∩ DE vs All DM (p-value): Do DM ∩ DE have a significantly higher trend towards up/down regulation compared to All DM?
-
-
-
-# Adjustment for multiple testing NOT DONE: all biological questions are separate
-# !! Fare Volcano plot meth.diff(x) vs log2FC(y): 4 quadranti
-# !! Hyper vs Hypo: not considered for now! Add to up/down (section 2.1)
-# !! Se c'è tempo: Aggiungere asterischi/legends ai grafici
+## -- final_table -- contains results for Section 1, 3, 4, 5, 6
+## -- final_expr_table -- contains results for Section 2
 
 
 
@@ -45,9 +46,9 @@ DM_sites <- read.csv("DM_sites.csv")
 
 ## Obtaining the universe N: 
 #Importing RNA-seq universe (all genes considered for the DESeq2 analysis)
-RNAseq_universe <- read.csv("RNAseq_universe.csv", col.names = c("SYMBOL", "log2FoldChange", "stat"))
+RNAseq_universe <- read.csv("RNAseq_universe.csv", col.names = c("SYMBOL", "log2FoldChange", "padj"))
 #Importing WGBS universe (all genes that had methylated sites with coverage > 5)
-WGBS_universe <- read.csv("WGBS_universe.csv", col.names = "SYMBOL")
+WGBS_universe <- read.csv("WGBS_universe.csv")
 # Universe N: all genes considered in both differential analyses
 universe <- intersect(na.omit(RNAseq_universe$SYMBOL), 
                       na.omit(WGBS_universe$SYMBOL))
@@ -59,8 +60,8 @@ DE_results <- DE_results %>% filter(SYMBOL %in% universe)
 DM_sites <- DM_sites  %>% filter(SYMBOL %in% universe)
 
 # Final genes ready for comparison are:
-DE_genes <- unique(DE_results$SYMBOL)  # 4144 DE genes
-DM_genes <- unique(DM_sites$SYMBOL)    # 277 genes with DM sites
+DE_genes <- unique(DE_results$SYMBOL)
+DM_genes <- unique(DM_sites$SYMBOL)
 
 ## Dividing DM_sites in 3 groups:
 #Group A: DMR on promoters only: the most relevant, but few. Additional specific analysis
@@ -73,7 +74,6 @@ prom_DM <- DM_sites[(DM_sites$annotation == 'Promoter (<=1kb)') | (DM_sites$anno
 rel_DM <- DM_sites[DM_sites$annotation != 'Distal Intergenic', ]
 #Group C:
 interg_DM <- DM_sites[DM_sites$annotation == 'Distal Intergenic', ]
-
 
 
 
@@ -93,10 +93,10 @@ rel_percent <- length(rel_intersect_genes)*100/length(universe)
 ## Hypergeometric test
 #How statistically significant is this intersection result? Is the intersection obtained by chance?
 
-N <- as.numeric(length(universe))                             #15317       # universe: all genes considered for both differential analyses
-m <- as.numeric(length(DE_genes))                             #4144        # all DE_genes
-k <- as.numeric(length(rel_genes))                            #172         # all DM genes non-intergenic
-q <- as.numeric(length(rel_intersect_genes))                  #99          # intersecting genes
+N <- as.numeric(length(universe))                             # universe: all genes considered for both differential analyses
+m <- as.numeric(length(DE_genes))                             # all DE_genes
+k <- as.numeric(length(rel_genes))                            # all DM genes non-intergenic
+q <- as.numeric(length(rel_intersect_genes))                  # intersecting genes
 ## Ho un urna con N palline. Ce ne sono m rosse e n=N-m bianche. 
 ## Qual è la probabilità che pescandone k ne ottengo q rosse?
 
@@ -117,7 +117,7 @@ row.names(final_table) <- c("DM genes", "DM ∩ DE genes", "fraction of intersec
 
 
 
-## Graph 1: Euler diagram Universe / DE / DM / Intersection ##
+## Graph 1: Euler diagram: DE / DM / Intersection ##
 
 fit <- euler(c(
   "DE"           = length(DE_genes) - length(rel_intersect_genes),
@@ -136,19 +136,20 @@ plot(fit,
 
 
 
-### 2 Exploring trends ###
+
+### Exploring trends ###
 
 
-## 2.1: Do intersected genes have a trend towards up/down regulation?
+### 2: Do intersected genes have a trend towards up/down regulation? ###
 
-#2.1.a: UPREGULATION
+#2.1: UPREGULATION
 DE_up <- DE_results %>% filter(log2FoldChange > 0)
 
 #Obtaining up and down intersecting genes
 rel_intersect_up <- rel_intersect_df %>% filter(log2FoldChange > 0)
-rel_intersect_up_genes <- unique(rel_intersect_up$SYMBOL)     #93/99 upregolated
+rel_intersect_up_genes <- unique(rel_intersect_up$SYMBOL)     # upregolated intersecting genes
 rel_intersect_down <- rel_intersect_df %>% filter(log2FoldChange < 0)
-rel_intersect_down_genes <- unique(rel_intersect_down$SYMBOL) #6/99 downregolated
+rel_intersect_down_genes <- unique(rel_intersect_down$SYMBOL) # downregolated intersecting genes
 
 # universe restricted to DE_genes only, because we are testing 
 # directionality of expression within the DE subset, not across all genes
@@ -161,8 +162,8 @@ q <- as.numeric(length(rel_intersect_up_genes))               # upregulated inte
 
 hyp_up <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
 
-## So basically all of the intersecting genes are upregulated. 
-## But what if DM genes are significantly enriched for upregulation? If that is the case this result is less interesting. 
+
+## But what if all DM genes are significantly enriched for upregulation? If that is the case this result is less interesting. 
 
 ##Let's see:
 #Obtaining all up and down non_DM genes (also non DE)
@@ -175,10 +176,10 @@ DM_up_genes <- all_up$SYMBOL[all_up$SYMBOL %in% DM_genes]
 
 ## Hypergeometric test on all rel DM sites
 #How significant is the trend of all DM genes towards being upregulated
-N <- as.numeric(length(universe))                             #15317        # universe: all genes used for analyses
-m <- as.numeric(length(all_up$SYMBOL))                        #7446         # all upregulated genes (also non DE)
-k <- as.numeric(length(DM_genes))                             #277          # all DM genes
-q <- as.numeric(length(DM_up_genes))                          #223          # upregulated DM genes
+N <- as.numeric(length(universe))                             # universe: all genes used for analyses
+m <- as.numeric(length(all_up$SYMBOL))                        # all upregulated genes (also non DE)
+k <- as.numeric(length(DM_genes))                             # all DM genes
+q <- as.numeric(length(DM_up_genes))                          # upregulated DM genes
 ## Ho un urna con N palline. Ce ne sono m rosse e n=N-m bianche. 
 ## Qual è la probabilità che pescandone k ne ottengo q rosse?
 
@@ -195,10 +196,10 @@ rel_DM_up_genes   <- all_up$SYMBOL[all_up$SYMBOL %in% rel_genes]
 
 ## Hypergeometric test on all rel DM sites
 #How significant is the trend of all DM genes towards being upregulated
-N <- as.numeric(length(rel_genes))                            #172          # universe: all rel DM genes
-m <- as.numeric(length(unique(rel_DM_up_genes)))              #136          # all DM relevant upregulated genes (also non DE)
-k <- as.numeric(length(rel_intersect_genes))                  #99           # all intersected DM genes
-q <- as.numeric(length(rel_intersect_up_genes))               #93           # upregulated intersected DM genes
+N <- as.numeric(length(rel_genes))                            # all rel DM genes
+m <- as.numeric(length(unique(rel_DM_up_genes)))              # all DM relevant upregulated genes (also non DE)
+k <- as.numeric(length(rel_intersect_genes))                  # all intersected DM genes
+q <- as.numeric(length(rel_intersect_up_genes))               # upregulated intersected DM genes
 ## Ho un urna con N palline. Ce ne sono m rosse e n=N-m bianche. 
 ## Qual è la probabilità che pescandone k ne ottengo q rosse?
 
@@ -209,50 +210,47 @@ hyp_fin_up <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
 
 
 
-##2.1.b: DOWNREGULATION:
+##2.2: DOWNREGULATION:
 
 DE_down <- DE_results %>% filter(log2FoldChange < 0)
 
 # All down genes in universe (also non DE)
 all_down <- RNAseq_universe %>% filter(log2FoldChange < 0 & SYMBOL %in% universe)
 DM_down_genes <- all_down$SYMBOL[all_down$SYMBOL %in% DM_genes]
-rel_DM_down_genes <- setdiff(rel_genes, rel_DM_up_genes)
+rel_DM_down_genes <- all_down$SYMBOL[all_down$SYMBOL %in% rel_genes]
 
 # Hypergeometric test: are all DM genes enriched for downregulation?
-N <- as.numeric(length(universe))
-m <- as.numeric(length(all_down$SYMBOL))       # all downregulated genes in universe
-k <- as.numeric(length(DM_genes))              # all DM genes
-q <- as.numeric(length(DM_down_genes))         # downregulated DM genes
+N <- as.numeric(length(universe))                 # universe: all genes common to the two analyses
+m <- as.numeric(length(all_down$SYMBOL))          # all downregulated genes in universe
+k <- as.numeric(length(DM_genes))                 # all DM genes
+q <- as.numeric(length(DM_down_genes))            # downregulated DM genes
 hyp_DM_down <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
 
 # Hypergeometric test: are DM ∩ DE genes enriched for downregulation?
-N <- as.numeric(length(DE_genes))              # universe: all DE genes
-m <- as.numeric(length(DE_down$SYMBOL))        # all DE down genes
-k <- as.numeric(length(rel_intersect_genes))   # all intersected DM genes
+N <- as.numeric(length(DE_genes))                 # universe: all DE genes
+m <- as.numeric(length(DE_down$SYMBOL))           # all DE down genes
+k <- as.numeric(length(rel_intersect_genes))      # all intersected DM genes
 q <- as.numeric(length(rel_intersect_down_genes)) # downregulated intersected DM genes
 hyp_down <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
 
 # Hypergeometric test: is DM ∩ DE more downregulated than all relevant DM?
-N <- as.numeric(length(rel_genes))
-m <- as.numeric(length(rel_DM_down_genes))
-k <- as.numeric(length(rel_intersect_genes))
-q <- as.numeric(length(rel_intersect_down_genes))
+N <- as.numeric(length(rel_genes))                # all relevant (on gene body/promoter) DM genes
+m <- as.numeric(length(rel_DM_down_genes))        # all DM relevant downregulated genes (also non DE)
+k <- as.numeric(length(rel_intersect_genes))      # all relevant intersecting genes
+q <- as.numeric(length(rel_intersect_down_genes)) # all downregulated intersected genes
 hyp_fin_down <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
 
 
 
 #Output on table
 final_expr_table <- data.frame("Upregulated" = c(hyp_DM_up, hyp_up, hyp_fin_up), "Downregulated" = c(hyp_DM_down, hyp_down, hyp_fin_down))
-row.names(final_expr_table) <- c("All DM (p-value)", "DM ∩ DE (p-value)", "DM ∩ DE vs All DM (p-value)")
-
-
-##2.1.c: Association: UP/DOWN DE vs Hyper/Hypo DM
+row.names(final_expr_table) <- c("p-value (All DM)", "p-value (DM ∩ DE)", "p-value (DM ∩ DE vs All DM)")
 
 
 ## Graph 2: Up/Down regulation across DE, DM, and DE∩DM genes ##
 
 upreg_summary <- data.frame(
-  group = c("All DE genes", "All DM genes", "Relevant DM genes", "DM ∩ DE genes"),
+  group = c("All DE genes", "All DM genes", "DM (only gene body/promoter)", "DM ∩ DE genes"),
   up   = c(length(DE_up$SYMBOL),
            length(DM_up_genes),
            length(rel_DM_up_genes),
@@ -271,7 +269,7 @@ upreg_long <- upreg_summary %>%
   mutate(
     total = sum(n),
     pct   = n / total * 100,
-    group = factor(group, levels = c("All DE genes", "All DM genes", "Relevant DM genes", "DM ∩ DE genes")),
+    group = factor(group, levels = c("All DE genes", "All DM genes", "DM (only gene body/promoter)", "DM ∩ DE genes")),
     direction = factor(direction, levels = c("up", "down"),
                        labels = c("Upregulated", "Downregulated"))
   )
@@ -309,22 +307,134 @@ p_upreg <- ggplot(upreg_long, aes(x = group, y = pct, fill = direction)) +
     plot.title       = element_text(face = "bold"),
     axis.text.x      = element_text(size = 11)
   )
-
 print(p_upreg)
 
 
 
-#Results:
-## With this i proved that DM genes are significantly enriched for upregulation.
-## Therefore i can confirm that DM genes have a statistically significant and strong trend towards upregulation,
-## and it's not the intersection that makes them so.
+##2.3: Association: UP/DOWN DE vs Hyper/Hypo DM
+
+#Obtaining hypo/hyper lists
+hypo_DM <- rel_DM %>% filter(meth.diff < 0)
+hyper_DM <- rel_DM %>% filter(meth.diff > 0)
+hypo_int_DM <- hypo_DM %>% filter(SYMBOL %in% DE_results$SYMBOL)
+hyper_int_DM <- hyper_DM %>% filter(SYMBOL %in% DE_results$SYMBOL)
+#I'm not filtering for unique genes. So there will be duplicates: this analysis will be done for site, rather than gene
+hypo_int_up_DM <- hypo_DM %>% filter(SYMBOL %in% DE_up$SYMBOL)
+hyper_int_up_DM <- hyper_DM %>% filter(SYMBOL %in% DE_up$SYMBOL)
+hypo_int_down_DM <- hypo_DM %>% filter(SYMBOL %in% DE_down$SYMBOL)
+hyper_int_down_DM <- hyper_DM %>% filter(SYMBOL %in% DE_down$SYMBOL)
+
+# Hypergeometric test: Are hypo/hyper DM sites associated with strong up/downregulation?
+# hypo-up
+N <- as.numeric(length(hypo_int_DM$SYMBOL) + length(hyper_int_DM$SYMBOL))        # All intersecting genes
+m <- as.numeric(length(hypo_int_up_DM$SYMBOL) + length(hyper_int_up_DM$SYMBOL))  # All up intersecting genes
+k <- as.numeric(length(hypo_int_DM$SYMBOL))                                      # All hypo intersecting genes
+q <- as.numeric(length(hypo_int_up_DM$SYMBOL))                                   # hypo-up intersecting genes
+hyp_up_hypo <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
+# hypo-down
+N <- as.numeric(length(hypo_int_DM$SYMBOL) + length(hyper_int_DM$SYMBOL))            # All intersecting genes
+m <- as.numeric(length(hypo_int_down_DM$SYMBOL) + length(hyper_int_down_DM$SYMBOL))  # All down intersecting genes
+k <- as.numeric(length(hypo_int_DM$SYMBOL))                                          # All hypo intersecting genes
+q <- as.numeric(length(hypo_int_down_DM$SYMBOL))                                     # hypo-down intersecting genes
+hyp_down_hypo <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
+# hyper-up
+N <- as.numeric(length(hypo_int_DM$SYMBOL) + length(hyper_int_DM$SYMBOL))        # All intersecting genes
+m <- as.numeric(length(hypo_int_up_DM$SYMBOL) + length(hyper_int_up_DM$SYMBOL))  # All up intersecting genes
+k <- as.numeric(length(hyper_int_DM$SYMBOL))                                     # All hyper intersecting genes
+q <- as.numeric(length(hyper_int_up_DM$SYMBOL))                                  # hyper-up intersecting genes
+hyp_up_hyper <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
+# hyper-down
+N <- as.numeric(length(hypo_int_DM$SYMBOL) + length(hyper_int_DM$SYMBOL))            # All intersecting genes
+m <- as.numeric(length(hypo_int_down_DM$SYMBOL) + length(hyper_int_down_DM$SYMBOL))  # All down intersecting genes
+k <- as.numeric(length(hyper_int_DM$SYMBOL))                                         # All hypo intersecting genes
+q <- as.numeric(length(hyper_int_down_DM$SYMBOL))                                    # hypo-down intersecting genes
+hyp_down_hyper <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
+
+#Output on table:
+final_expr_table <- rbind(final_expr_table, "p-value (Hypomethylated DM)" = c(hyp_up_hypo, hyp_down_hypo))
+final_expr_table <- rbind(final_expr_table, "p-value (Hypermethylated DM)" = c(hyp_up_hyper, hyp_down_hyper))
+
+##! Duplicates were not cleaned: this is wanted, as different sites on the same gene may have different trends.
+##  In this way all information is kept. Therefore the analysis is for "site", not for "gene".
+
+
+
+## Graph 3: Up/Down regulation in relation to hypo/hypermethylation ##
+
+upreg_summary <- data.frame(
+  group = c("Hypomethylated", "Hypermethylated"),
+  up   = c(length(hypo_int_up_DM$SYMBOL),
+           length(hyper_int_up_DM$SYMBOL)),
+  down = c(length(hypo_int_down_DM$SYMBOL),
+           length(hyper_int_down_DM$SYMBOL))
+)
+
+upreg_long <- upreg_summary %>%
+  pivot_longer(cols = c(up, down),
+               names_to  = "direction",
+               values_to = "n") %>%
+  group_by(group) %>%
+  mutate(
+    total = sum(n),
+    pct   = n / total * 100,
+    group = factor(group, levels = c("Hypomethylated", "Hypermethylated")),
+    direction = factor(direction, levels = c("up", "down"),
+                       labels = c("Upregulated", "Downregulated"))
+  )
+
+totals_upreg <- upreg_long %>%
+  distinct(group, total)
+
+p_upreg <- ggplot(upreg_long, aes(x = group, y = pct, fill = direction)) +
+  geom_bar(stat = "identity", width = 0.5) +
+  geom_text(
+    data = totals_upreg,
+    aes(x = group, y = 103, label = paste0("n = ", total)),
+    inherit.aes = FALSE,
+    size = 4, fontface = "bold"
+  ) +
+  scale_fill_manual(
+    values = c("Upregulated" = "#D6604D", "Downregulated" = "#4393C3"),
+    name   = NULL
+  ) +
+  scale_y_continuous(
+    limits = c(0, 108),
+    breaks = seq(0, 100, 25),
+    labels = function(x) paste0(x, "%")
+  ) +
+  geom_hline(yintercept = 50, linetype = "dashed", color = "grey40", linewidth = 0.5) +
+  labs(
+    title    = "Expression direction relation to hypo/hypermethylation sites",
+    subtitle = "DM (only gene body/promoter) ∩ DE gene set",
+    x        = NULL,
+    y        = "Percentage of sites"
+  ) +
+  theme_classic(base_size = 13) +
+  theme(
+    legend.position  = "top",
+    plot.title       = element_text(face = "bold"),
+    axis.text.x      = element_text(size = 11)
+  )
+print(p_upreg)
+
+
+# Graph 4:Volcano plot meth.diff vs log2FC
+all_DM_DE_df <- merge(RNAseq_universe, DM_sites, by = "SYMBOL")
+ggplot(all_DM_DE_df, aes(x = meth.diff, y = log2FoldChange)) +
+         geom_point(alpha = 0.5) +
+         geom_point(data = all_DM_DE_df[all_DM_DE_df$padj < 0.05 & abs(all_DM_DE_df$log2FoldChange) > 1, ], color = "red") +
+         theme_minimal() +
+         geom_hline(yintercept = 0, color = "blue") +
+         geom_vline(xintercept = 0, color = "blue") +
+         xlim(-max(abs(all_DM_DE_df$meth.diff), na.rm = TRUE), max(abs(all_DM_DE_df$meth.diff), na.rm = TRUE)) +
+         ylim(-max(abs(all_DM_DE_df$log2FoldChange), na.rm = TRUE), max(abs(all_DM_DE_df$log2FoldChange), na.rm = TRUE)) +
+         labs(title = "Volcano plot: DM meth.diff vs DE log2FC", x = "meth.diff", y = "log2 Fold Change")
 
 
 
 
 
-
-## 2.2: Are intersected genes specifically associated to exons/introns/promoters/3UTR?
+### 3: Are intersected genes specifically associated to exons/introns/promoters/3UTR? ###
 
 # DMR on promoters only
 
@@ -399,7 +509,7 @@ final_table <- cbind(final_table, "3' UTR" = c(as.numeric(length(UTR3_genes)), a
 
 
 
-## Graph 3 ##
+## Graph 5: Region type ##
 # Building counts
 region_summary <- data.frame(
   region = c("Promoter", "Exon", "Intron", "3' UTR"),
@@ -461,8 +571,7 @@ print(p_region)
 
 
 
-
-## 2.3: The more the sites are differentially methylated (in magnitude), the more the gene is up/down regulated? (Correlation between magnitude of methyl and up/down regulation)
+### 4: The more the sites are differentially methylated (in magnitude), the more the gene is up/down regulated? (Correlation between magnitude of methyl and up/down regulation) ###
 
 #Considering unique genes: meth will be the mean of the sites
 gene_level_df <- all_intersect_df %>%
@@ -495,7 +604,7 @@ intron_cor <- cor.test(intron_intersect_df$mean_meth, intron_intersect_df$log2Fo
 final_table <- rbind(final_table, "Rho corr (meth vs expr)" = c(all_cor$estimate, prom_cor$estimate, exon_cor$estimate, intron_cor$estimate, "/"))
 final_table <- rbind(final_table, "p-value corr (meth vs expr)" = c(all_cor$p.value, prom_cor$p.value, exon_cor$p.value, intron_cor$p.value, "/"))
 
-#Graphs
+## Graphs 6: Scatter plot ##
 # Scatter plot
 all_scatt <- ggplot(gene_level_df, aes(x = mean_meth, y = log2FoldChange)) +
                 geom_point() +
@@ -518,9 +627,10 @@ plot_grid(all_scatt, prom_scatt, exon_scatt, intron_scatt, nrow = 2, ncol = 2)
 
 
 
-## 2.4: Effects of number of DM sites on Expression
 
-#2.4.a: The more DM sites a gene has, the more probability of being DE it has?
+### 5: Effects of number of DM sites on Expression ###
+
+##5.1: The more DM sites a gene has, the more probability of being DE it has?
 
 #Extracting the genes with more than 1 DM site
 #Choosing to exclude intergenic DM from this. So the universe of this analysis is only "Relevant genes". 
@@ -539,11 +649,11 @@ q <- as.numeric(length(multi_rel_intersect_genes))              # intersecting g
 hyp_multi <- phyper(q-1, m, N-m, k, lower.tail = FALSE)
 
 #Adding to table:
-final_table <- rbind(final_table, "p-value (multi DM genes)" = c(hyp_multi, "/", "/", "/", "/", "/"))
+final_table <- rbind(final_table, "p-value (multi DM genes)" = c(hyp_multi, "/", "/", "/", "/"))
 
 
 
-## Graph 5: Probability of being DE depending on number of DM sites ##
+## Graph 7: Probability of being DE depending on number of DM sites ##
 # Summary dataframe
 single_DM <- rel_DM %>% filter(SYMBOL %in% DM_num$gene[DM_num$frequency < 2])
 single_DM_genes <- unique(single_DM$SYMBOL)
@@ -611,13 +721,11 @@ print(p_prob)
 
 
 
-
-
-## 2.4.b: Correlation between number of DM sites and log2FC
+##5.2: Correlation between number of DM sites and log2FC
 
 # Counting DM sites per gene (non-intergenic only, consistent with 2.4.a)
-DM_sites_count <- rel_DM %>%
-  count(SYMBOL, name = "n_DM_sites")
+DM_sites_count <- as.data.frame(table(rel_DM$SYMBOL))
+colnames(DM_sites_count) <- c("SYMBOL", "n_DM_sites")
 
 # Joining expression values from the RNA-seq universe
 sites_fc_df <- DM_sites_count %>%
@@ -645,7 +753,7 @@ final_table <- rbind(final_table,
                      "Rho corr (sites vs log2FC)" = c(sites_fc_cor$estimate, "/", "/", "/", "/", "/"),
                      "p-value corr (sites vs log2FC)" = c(sites_fc_cor$p.value, "/", "/", "/", "/", "/"))
 
-# Graph 6: Scatter plot of number of DM sites vs log2FC
+## Graph 8: Scatter plot of number of DM sites vs log2FC ##
 #Magnitude
 p_sites_fc_abs <- ggplot(sites_fc_df, aes(x = n_DM_sites, y = abs(log2FoldChange))) +
   geom_jitter(width = 0.12, height = 0, alpha = 0.7) +

@@ -5,7 +5,7 @@ library(ggridges)
 #library(rGREAT)
 
 setwd("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis")
-#pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration analysis (GO) Graphs.pdf")
+pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration analysis (GO) Graphs.pdf")
 
 
 
@@ -24,7 +24,7 @@ DM_sites <- read.csv("DM_sites.csv")
 
 ## Obtaining the universe N: 
 #Importing RNA-seq universe (all genes considered for the DESeq2 analysis)
-DE_res <- read.csv("RNAseq_universe.csv", col.names = c("SYMBOL", "log2FoldChange", "stat"))
+DE_res <- read.csv("RNAseq_universe.csv", col.names = c("SYMBOL", "log2FoldChange", "padj"))
 #Importing WGBS universe (all genes that had methylated sites with coverage > 5)
 WGBS_universe <- read.csv("WGBS_universe.csv", col.names = "SYMBOL")
 
@@ -82,7 +82,7 @@ ORA_all_BP <-  enrichGO(gene = sign_GO_genes,
                         qvalueCutoff = 0.05)
 
 ORA_all_BP_simp <- simplify(ORA_all_BP, 
-                            cutoff = 0.7, 
+                            cutoff = 0.8, 
                             by = "p.adjust")
 
 
@@ -116,7 +116,7 @@ ORA_BS_all_BP <-  enrichGO(gene = DM_GO_genes,
                         qvalueCutoff = 0.05)
 
 ORA_BS_all_BP_simp <- simplify(ORA_BS_all_BP, 
-                                  cutoff = 0.7, 
+                                  cutoff = 0.8, 
                                   by = "p.adjust")
 
 bar_all_BS <- barplot(ORA_BS_all_BP_simp, showCategory = 10, title = "WGBS BP - ORA: all genes")
@@ -196,7 +196,7 @@ ggplot(shared_results_top,
 
 
 
-#dev.off()
+dev.off()
 
 
 

@@ -176,12 +176,12 @@ DE_res <- DE_res %>%
   slice_max(order_by = abs(log2FoldChange), n = 1, with_ties = FALSE) %>%
   ungroup()
 
-sign_DE_res <- DE_res %>% filter(padj < 0.0001 & abs(log2FoldChange) > 1)
+sign_DE_res <- DE_res %>% filter(padj < 0.05 & abs(log2FoldChange) > 1)
 #5265 DE genes for very stringent conditions: there is very strong variability
 write.csv(sign_DE_res, out_csv, row.names = FALSE)
 
 #Exporting the universe
-RNAseq_universe <- DE_res[, c("hugo_symbol", "log2FoldChange")]
+RNAseq_universe <- DE_res[, c("hugo_symbol", "log2FoldChange", "padj")]
 write.csv(RNAseq_universe, out_universe, row.names = FALSE)
 
 
@@ -192,135 +192,13 @@ res_shrunk_df <- as.data.frame(res_shrunk)
 
 print(ggplot(res_shrunk_df, aes(x = log2FoldChange, y = -log10(padj))) +
   geom_point(alpha = 0.5) +
-  geom_hline(yintercept = -log10(0.0001), linetype = "dashed", color = "blue") +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "blue") +
   geom_vline(xintercept = c(-1, 1), linetype = "dashed", color = "blue") +
   geom_point(data = res_shrunk_df[!is.na(res_shrunk_df$padj) & 
-                                    res_shrunk_df$padj < 0.0001 & 
+                                    res_shrunk_df$padj < 0.05 & 
                                     abs(res_shrunk_df$log2FoldChange) > 1, ], color = "red") +
   theme_minimal() +
   labs(title = "Volcano plot: infection", x = "log2 Fold Change", y = "-log10(adj pvalue)"))
-
-
-
-
-### 5. Functional enrichment analysis ###
-
-##DE analysis resulted in a large number of extremely significant genes, and the number of sample of this experiment isn't very high. 
-##Therefore, Over Representation Analysis (ORA) is expected to be the most coherent choice for FE analysis, and will be the primary tool in this case.
-##A GSEA will also be performed only as a confirmatory tool, and to add information on weaker phenomena. It must therefore be considered to be less significant.
-
-
-##ORA (ClusterProfiler)
-#Defining the background
-background <- DE_res$hugo_symbol
-all_symbols <- keys(org.Hs.eg.db, keytype = "SYMBOL")
-mapped_symbols <- intersect(background, all_symbols)
-length(mapped_symbols)
-#Only 17809/23637. So 5794 genes missing genes.
-
-#Now trying to retrieve the missing genes. A possibility is that these are codes for novel/ncRNAs! 
-#In that case we don't need to retrieve them, cause they simply don't have associated GO terms. Let's check:
-not_in_symbol <- DE_res %>% filter(!hugo_symbol %in% mapped_symbols)   
-novel <-grepl("^ENSG", not_in_symbol$hugo_symbol)
-sum(novel)
-#5738/5794 have an "ENSG" hugo symbol. This generally means these are novel/unmapped genes. Therefore they can be discarded. 
-#The other 56 genes must be further analyzed
-missing <- not_in_symbol[!novel ,]
-#print(missing$hugo_symbol)
-#These are all ncRNAs. Therefore they can be discarded too.
-#Now checking how many of the significantly DE genes remain after discarding novel genes and ncRNAs
-sign_GO_genes <- intersect(sign_DE_res$hugo_symbol, all_symbols) #4499. This will be the gene set for ORA
-background <- mapped_symbols                                     # This will be the background for ORA
-##So the FE analysis will work on 4499/5265 of the significant genes, and 17809/23637 of the background genes.
-
-#Dividing for upregulated and downregulated.
-up_sign_DE_res <- sign_DE_res %>% filter(log2FoldChange > 0 & hugo_symbol %in% sign_GO_genes)     #2285 genes
-down_sign_DE_res <- sign_DE_res %>% filter(log2FoldChange < 0 & hugo_symbol %in% sign_GO_genes)   #2214 genes
-
-#ORA all
-ORA_all_BP <-  enrichGO(gene = sign_GO_genes,       
-                        universe = background,        
-                        OrgDb = org.Hs.eg.db,       
-                        keyType = "SYMBOL",             
-                        ont = "BP",                 
-                        #pAdjustMethod = "none",         
-                        pvalueCutoff = 0.05,
-                        qvalueCutoff = 0.05)
-
-
-#ORA up
-ORA_up_BP <-  enrichGO(gene = up_sign_DE_res$hugo_symbol,       
-                       universe = background,        
-                       OrgDb = org.Hs.eg.db,       
-                       keyType = "SYMBOL",             
-                       ont = "BP",                 
-                       #pAdjustMethod = "none",         
-                       pvalueCutoff = 0.05,
-                       qvalueCutoff = 0.05)
-
-
-#ORA down
-ORA_down_BP <-  enrichGO(gene = down_sign_DE_res$hugo_symbol,       
-                         universe = background,        
-                         OrgDb = org.Hs.eg.db,       
-                         keyType = "SYMBOL",             
-                         ont = "BP",                 
-                         #pAdjustMethod = "none",         
-                         pvalueCutoff = 0.05,
-                         qvalueCutoff = 0.05)
-
-
-print(barplot(ORA_all_BP, showCategory = 10, title = "Biological Process - ORA: all genes"))
-print(dotplot(ORA_all_BP, showCategory = 10, title = "Biological Process - ORA: all genes"))
-
-print(barplot(ORA_up_BP, showCategory = 10, title = "Biological Process - ORA: upregulated genes"))
-print(dotplot(ORA_up_BP, showCategory = 10, title = "Biological Process - ORA: upregulated genes"))
-
-print(barplot(ORA_down_BP, showCategory = 10, title = "Biological Process - ORA: downregulated genes"))
-print(dotplot(ORA_down_BP, showCategory = 10, title = "Biological Process - ORA: downregulated genes"))
-
-#Results:
-length(ORA_all_BP@result$ID)           #5629 terms
-
-# Finding common and unique terms between up and downregulated
-up_terms   <- ORA_up_BP@result %>% filter(p.adjust < 0.05) %>% pull(ID)
-down_terms <- ORA_down_BP@result %>% filter(p.adjust < 0.05) %>% pull(ID)
-#common terms
-common_terms <- intersect(up_terms, down_terms)  #5100 terms
-#unique terms
-unique_up <- setdiff(up_terms, down_terms)    #315 terms
-unique_down <- setdiff(down_terms, up_terms)  #214 terms
-
-#Visualizing only unique terms:
-ORA_up_unique <- ORA_up_BP
-ORA_up_unique@result <- ORA_up_BP@result %>% filter(ID %in% unique_up)
-ORA_down_unique <- ORA_down_BP
-ORA_down_unique@result <- ORA_down_BP@result %>% filter(ID %in% unique_down)
-print(barplot(ORA_up_unique, showCategory = 10, title = "Biological Process - ORA: unique upregulated genes"))
-print(barplot(ORA_down_unique, showCategory = 10, title = "Biological Process - ORA: unique downregulated genes"))
-
-
-##GSEA
-#Using the "stat" list from DESeq2 as metric for the ranking
-DE_res_GSEA <- DE_res %>% filter(DE_res$hugo_symbol %in% background)
-stat_list <- DE_res_GSEA$stat
-names(stat_list) <- DE_res_GSEA$hugo_symbol
-stat_list <- sort(stat_list, decreasing = TRUE)
-
-set.seed(10)
-gsea_res <- gseGO(
-  geneList = stat_list,
-  OrgDb = org.Hs.eg.db,
-  ont = "BP",
-  keyType = "SYMBOL",
-  verbose = FALSE
-)
-
-#Plot
-print(dotplot(gsea_res, showCategory = 15, title = "Biological Process - GSEA"))
-p <- ridgeplot(gsea_res, showCategory = 15)         #library(ggridges)
-print(p + ggtitle("Biological Process - GSEA"))
-
 
 dev.off()
 
