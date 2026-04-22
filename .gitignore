@@ -6,6 +6,7 @@ references/
 trimmed/
 not_trimmed/
 trimmed_data*/
+dataset/
 
 # Heavy files
 *.fastq
