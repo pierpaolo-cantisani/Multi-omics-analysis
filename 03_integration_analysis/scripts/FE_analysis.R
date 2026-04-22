@@ -1,18 +1,27 @@
 library(clusterProfiler)
 library(org.Hs.eg.db)
+library(dplyr)
 library(enrichplot)
 library(ggridges)
-#library(rGREAT)
+library(cowplot)
+library(eulerr)
+library(ggplot2)
 
-setwd("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis")
-pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration analysis (GO) Graphs.pdf")
+
+#Connecting to snakeake inputs and outputs:
+out_csv <- snakemake@output[[1]]
+out_pdf <- snakemake@output[[2]]
+out_session <- snakemake@output[[3]]
+
+
+pdf(out_pdf, height = 10, width = 20)
 
 
 
 ### 0. Importing and prefiltering data
 
 #Importing RNA-Seq DE genes
-sign_DE_res <- read.csv("DE_results.csv")
+sign_DE_res <- read.csv(snakemake@input[[1]])
 sign_DE_res <- sign_DE_res %>% dplyr::rename(SYMBOL = hugo_symbol)  #renaming for coherence
 #Deleting duplicate genes (keeping the one with the higher log2FC)
 sign_DE_res <- sign_DE_res %>%
@@ -20,13 +29,13 @@ sign_DE_res <- sign_DE_res %>%
   slice_max(order_by = abs(log2FoldChange), n = 1, with_ties = FALSE) %>%
   ungroup()
 #Importing BS-Seq DM sites
-DM_sites <- read.csv("DM_sites.csv")
+DM_sites <- read.csv(snakemake@input[[2]])
 
 ## Obtaining the universe N: 
 #Importing RNA-seq universe (all genes considered for the DESeq2 analysis)
-DE_res <- read.csv("RNAseq_universe.csv", col.names = c("SYMBOL", "log2FoldChange", "padj"))
+DE_res <- read.csv(snakemake@input[[3]], col.names = c("SYMBOL", "log2FoldChange", "padj"))
 #Importing WGBS universe (all genes that had methylated sites with coverage > 5)
-WGBS_universe <- read.csv("WGBS_universe.csv", col.names = "SYMBOL")
+WGBS_universe <- read.csv(snakemake@input[[4]], col.names = "SYMBOL")
 
 # Universe N: all genes considered in both differential analyses
 universe <- intersect(na.omit(DE_res$SYMBOL), 
@@ -89,7 +98,7 @@ ORA_all_BP_simp <- simplify(ORA_all_BP,
 #Visualizations:
 bar_all_RNA <- barplot(ORA_all_BP_simp, showCategory = 10, title = "RNA-Seq BP - ORA: all genes")
 dot_all_RNA <- dotplot(ORA_all_BP_simp, showCategory = 10, title = "RNA-Seq BP - ORA: all genes")
-plot_grid(bar_all_RNA, dot_all_RNA, nrow = 1, ncol = 2)
+print(plot_grid(bar_all_RNA, dot_all_RNA, nrow = 1, ncol = 2))
 
 #Results:
 DE_terms  <- ORA_all_BP_simp@result %>% filter(p.adjust < 0.05) %>% dplyr::pull(ID)
@@ -108,20 +117,20 @@ DM_GO_genes <- intersect(DM_sites$SYMBOL, all_symbols)           # This will be 
 background_BS <- mapped_symbols_BS                                     # This will be the background for ORA
 
 ORA_BS_all_BP <-  enrichGO(gene = DM_GO_genes,       
-                        universe = background_BS,        
-                        OrgDb = org.Hs.eg.db,       
-                        keyType = "SYMBOL",             
-                        ont = "BP",                 
-                        pvalueCutoff = 0.05,
-                        qvalueCutoff = 0.05)
+                           universe = background_BS,        
+                           OrgDb = org.Hs.eg.db,       
+                           keyType = "SYMBOL",             
+                           ont = "BP",                 
+                           pvalueCutoff = 0.05,
+                           qvalueCutoff = 0.05)
 
 ORA_BS_all_BP_simp <- simplify(ORA_BS_all_BP, 
-                                  cutoff = 0.8, 
-                                  by = "p.adjust")
+                               cutoff = 0.8, 
+                               by = "p.adjust")
 
 bar_all_BS <- barplot(ORA_BS_all_BP_simp, showCategory = 10, title = "WGBS BP - ORA: all genes")
 dot_all_BS <- dotplot(ORA_BS_all_BP_simp, showCategory = 10, title = "WGBS BP - ORA: all genes")
-plot_grid(bar_all_BS, dot_all_BS, nrow = 1, ncol = 2)
+print(plot_grid(bar_all_BS, dot_all_BS, nrow = 1, ncol = 2))
 
 #Results:
 DM_terms  <- ORA_BS_all_BP_simp@result %>% filter(p.adjust < 0.05) %>% pull(ID)
@@ -142,12 +151,13 @@ fit <- euler(c(
   "DM terms"           = length(DM_terms) - length(common_DM_DE),
   "DE terms&DM terms"        = length(common_DM_DE)
 ))
-plot(fit,
-     quantities = list(cex = 1.1),
-     labels = list(cex = 1.1),
-     fills = list(fill = c("#4393C3", "#D6604D", "#92C592"), alpha = 0.6),
-     edges = TRUE,
-     main = paste0("Overlap: DE vs DM terms")
+print(plot(fit,
+       quantities = list(cex = 1.1),
+       labels = list(cex = 1.1),
+       fills = list(fill = c("#4393C3", "#D6604D", "#92C592"), alpha = 0.6),
+       edges = TRUE,
+       main = paste0("Overlap: DE vs DM terms")
+  )
 )
 
 
@@ -175,46 +185,33 @@ shared_results_top <- shared_results %>%
   filter(Description %in% top_terms)
 
 # Plot
-ggplot(shared_results_top, 
-       aes(x = omic, y = Description, size = GeneRatio_num, color = p.adjust)) +
-  geom_point() +
-  scale_color_gradient(low = "#D6604D", high = "#4393C3",
+print(ggplot(shared_results_top, aes(x = omic, y = Description, size = GeneRatio_num, color = p.adjust)) +
+       geom_point() +
+       scale_color_gradient(low = "#D6604D", high = "#4393C3",
                        name = "p.adjust") +
-  scale_size_continuous(name = "Gene Ratio", range = c(2, 8)) +
-  labs(
-    title    = "Shared GO terms: DE vs DM",
-    subtitle = paste0(length(common_DM_DE), " terms in common"),
-    x        = NULL,
-    y        = NULL
-  ) +
-  theme_classic(base_size = 12) +
-  theme(
-    axis.text.y  = element_text(size = 9),
-    plot.title   = element_text(face = "bold"),
-    legend.position = "right"
-  )
+       scale_size_continuous(name = "Gene Ratio", range = c(2, 8)) +
+       labs(
+            title    = "Shared GO terms: DE vs DM",
+            subtitle = paste0(length(common_DM_DE), " terms in common"),
+            x        = NULL,
+            y        = NULL
+       ) +
+       theme_classic(base_size = 12) +
+       theme(
+           axis.text.y  = element_text(size = 9),
+           plot.title   = element_text(face = "bold"),
+           legend.position = "right"
+       )
+)
 
 
+## Results output to table
+write.csv(shared_results, out_csv, row.names = FALSE)
 
 dev.off()
 
 
-
-
-
-
-
-
-### +: Intergenic regions analysis
-
-gr_intergenic <- as(peakAnno_df, "GRanges")[peakAnno_df$annotation == "Distal Intergenic"]
-job <- submitGreatJob(gr_intergenic, species = "hg38")
-# Results table
-res <- getEnrichmentTables(job)
-
-# Associated genes:
-inter_genes_df <- as.data.frame(getRegionGeneAssociations(job))
-# Associated GO terms (filtered by significance)
-go_bp <- res[["GO Biological Process"]]
-go_bp_sig <- go_bp[go_bp$Binom_Adjp_BH < 0.05, ]
-go_bp_sig <- go_bp_sig[order(go_bp_sig$Binom_Adjp_BH), ]  # ordina per p-value
+### Obtaining session info:
+sink(out_session)
+sessionInfo()
+sink()

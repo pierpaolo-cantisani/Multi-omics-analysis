@@ -10,6 +10,7 @@ conda env create -f ~/Multi-omics-analysis/01_rnaseq/envs/r_DE_analysis.yml
 
 ### Creating directories ###
 mkdir -p ~/Multi-omics-analysis/01_rnaseq/{fastq,fastqc_results/not_trimmed,fastq_trimmed,fastqc_results/trimmed,salmon_output,references,DE_results}
+mkdir -p ~/Multi-omics-analysis/02_wgbs/{DM_results}
 
 
 ### Downloading and indexing reference transcriptome for salmon quantification ###

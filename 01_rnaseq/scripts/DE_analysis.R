@@ -23,7 +23,7 @@ pdf(out_pdf, height = 10, width = 15)
 ### 1. File and reference download ###
 
 ## Downloading the reference: hg38 version 49
-gtf <- import("references/gencode.v49.annotation.gtf.gz")
+gtf <- import("01_rnaseq/references/gencode.v49.annotation.gtf.gz")
 #mapping ensembl id and hugo symbols
 gtf_genes <- gtf[gtf$type == "gene"]
 gene_map <- data.frame(ensembl_id = gtf_genes$gene_id,

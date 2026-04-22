@@ -5,8 +5,15 @@ library(tidyr)
 library(cowplot)
 
 
-setwd("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis")
-pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration analysis Graphs.pdf")
+#Connecting to snakeake inputs and outputs:
+out_all <- snakemake@output[[1]]
+out_pdf <- snakemake@output[[2]]
+out_table <- snakemake@output[[3]]
+out_expr_table <- snakemake@output[[4]]
+out_session <- snakemake@output[[5]]
+
+
+pdf(out_pdf)
 
 
 ### !!! Summary:
@@ -26,7 +33,6 @@ pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration anal
 # (meth vs expr): Is the magnitude of the methylation (in the category) correlated to the genes up/down regulation?
 ## Section 5
 # (multi DM genes) : Are genes with 2 or more (non intergenic) methylation sites more likely to be DE than those with 1?
-## Section 6
 # (sites vs log2FC): Do the number of DM sites in a gene correlate with its expression (making it more likely DE)?
 # (sites vs |log2FC|): Do the number of DM sites in a DE gene correlate with the magnitude of its differential expression?
 
@@ -39,16 +45,16 @@ pdf("C:/Users/pierp/Desktop/THESIS PROJECT/Integration analysis/Integration anal
 ### 0. Importing and prefiltering data
 
 #Importing RNA-Seq DE genes
-DE_results <- read.csv("DE_results.csv")
+DE_results <- read.csv(snakemake@input[[1]])
 DE_results <- DE_results %>% rename(SYMBOL = hugo_symbol)  #renaming for coherence
 #Importing BS-Seq DM sites
-DM_sites <- read.csv("DM_sites.csv")
+DM_sites <- read.csv(snakemake@input[[2]])
 
 ## Obtaining the universe N: 
 #Importing RNA-seq universe (all genes considered for the DESeq2 analysis)
-RNAseq_universe <- read.csv("RNAseq_universe.csv", col.names = c("SYMBOL", "log2FoldChange", "padj"))
+RNAseq_universe <- read.csv(snakemake@input[[3]], col.names = c("SYMBOL", "log2FoldChange", "padj"))
 #Importing WGBS universe (all genes that had methylated sites with coverage > 5)
-WGBS_universe <- read.csv("WGBS_universe.csv")
+WGBS_universe <- read.csv(snakemake@input[[4]])
 # Universe N: all genes considered in both differential analyses
 universe <- intersect(na.omit(RNAseq_universe$SYMBOL), 
                       na.omit(WGBS_universe$SYMBOL))
@@ -125,12 +131,13 @@ fit <- euler(c(
   "DE&DM"        = length(rel_intersect_genes)
 ))
 
-plot(fit,
-     quantities = list(cex = 1.1),
-     labels = list(cex = 1.1),
-     fills = list(fill = c("#4393C3", "#D6604D", "#92C592"), alpha = 0.6),
-     edges = TRUE,
-     main = paste0("Overlap: DE and DM genes (universe = ", length(universe), " genes)")
+print(plot(fit,
+       quantities = list(cex = 1.1),
+       labels = list(cex = 1.1),
+       fills = list(fill = c("#4393C3", "#D6604D", "#92C592"), alpha = 0.6),
+       edges = TRUE,
+       main = paste0("Overlap: DE and DM genes (universe = ", length(universe), " genes)")
+  )
 )
 
 
@@ -250,7 +257,7 @@ row.names(final_expr_table) <- c("p-value (All DM)", "p-value (DM ∩ DE)", "p-v
 ## Graph 2: Up/Down regulation across DE, DM, and DE∩DM genes ##
 
 upreg_summary <- data.frame(
-  group = c("All DE genes", "All DM genes", "DM (only gene body/promoter)", "DM ∩ DE genes"),
+  group = c("All DE genes", "All DM genes", "DM (body/promoter)", "DM ∩ DE genes"),
   up   = c(length(DE_up$SYMBOL),
            length(DM_up_genes),
            length(rel_DM_up_genes),
@@ -269,7 +276,7 @@ upreg_long <- upreg_summary %>%
   mutate(
     total = sum(n),
     pct   = n / total * 100,
-    group = factor(group, levels = c("All DE genes", "All DM genes", "DM (only gene body/promoter)", "DM ∩ DE genes")),
+    group = factor(group, levels = c("All DE genes", "All DM genes", "DM (body/promoter)", "DM ∩ DE genes")),
     direction = factor(direction, levels = c("up", "down"),
                        labels = c("Upregulated", "Downregulated"))
   )
@@ -404,8 +411,8 @@ p_upreg <- ggplot(upreg_long, aes(x = group, y = pct, fill = direction)) +
   ) +
   geom_hline(yintercept = 50, linetype = "dashed", color = "grey40", linewidth = 0.5) +
   labs(
-    title    = "Expression direction relation to hypo/hypermethylation sites",
-    subtitle = "DM (only gene body/promoter) ∩ DE gene set",
+    title    = "Expression direction vs hypo/hypermethylation sites",
+    subtitle = "DM (body/promoter) ∩ DE gene set",
     x        = NULL,
     y        = "Percentage of sites"
   ) +
@@ -420,16 +427,16 @@ print(p_upreg)
 
 # Graph 4:Volcano plot meth.diff vs log2FC
 all_DM_DE_df <- merge(RNAseq_universe, DM_sites, by = "SYMBOL")
-ggplot(all_DM_DE_df, aes(x = meth.diff, y = log2FoldChange)) +
-         geom_point(alpha = 0.5) +
-         geom_point(data = all_DM_DE_df[all_DM_DE_df$padj < 0.05 & abs(all_DM_DE_df$log2FoldChange) > 1, ], color = "red") +
-         theme_minimal() +
-         geom_hline(yintercept = 0, color = "blue") +
-         geom_vline(xintercept = 0, color = "blue") +
-         xlim(-max(abs(all_DM_DE_df$meth.diff), na.rm = TRUE), max(abs(all_DM_DE_df$meth.diff), na.rm = TRUE)) +
-         ylim(-max(abs(all_DM_DE_df$log2FoldChange), na.rm = TRUE), max(abs(all_DM_DE_df$log2FoldChange), na.rm = TRUE)) +
-         labs(title = "Volcano plot: DM meth.diff vs DE log2FC", x = "meth.diff", y = "log2 Fold Change")
-
+print(ggplot(all_DM_DE_df, aes(x = meth.diff, y = log2FoldChange)) +
+        geom_point(alpha = 0.5) +
+        geom_point(data = all_DM_DE_df[all_DM_DE_df$padj < 0.05 & abs(all_DM_DE_df$log2FoldChange) > 1, ], color = "red") +
+        theme_minimal() +
+        geom_hline(yintercept = 0, color = "blue") +
+        geom_vline(xintercept = 0, color = "blue") +
+        xlim(-max(abs(all_DM_DE_df$meth.diff), na.rm = TRUE), max(abs(all_DM_DE_df$meth.diff), na.rm = TRUE)) +
+        ylim(-max(abs(all_DM_DE_df$log2FoldChange), na.rm = TRUE), max(abs(all_DM_DE_df$log2FoldChange), na.rm = TRUE)) +
+        labs(title = "Volcano plot: diff. methylation vs diff. expression", x = "meth.diff", y = "log2 Fold Change")
+)
 
 
 
@@ -607,22 +614,22 @@ final_table <- rbind(final_table, "p-value corr (meth vs expr)" = c(all_cor$p.va
 ## Graphs 6: Scatter plot ##
 # Scatter plot
 all_scatt <- ggplot(gene_level_df, aes(x = mean_meth, y = log2FoldChange)) +
-                geom_point() +
-                geom_smooth(method = "lm") +
-                labs(title = "All Relevant methylation vs Expression")
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Body/prom methylation vs Expression")
 prom_scatt <- ggplot(prom_intersect_df, aes(x = mean_meth, y = log2FoldChange)) +
-                geom_point() +
-                geom_smooth(method = "lm") +
-                labs(title = "Promoter methylation vs Expression")
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Promoter methylation vs Expression")
 exon_scatt <- ggplot(exon_intersect_df, aes(x = mean_meth, y = log2FoldChange)) +
-                geom_point() +
-                geom_smooth(method = "lm") +
-                labs(title = "Exon methylation vs Expression")
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Exon methylation vs Expression")
 intron_scatt <- ggplot(intron_intersect_df, aes(x = mean_meth, y = log2FoldChange)) +
-                geom_point() +
-                geom_smooth(method = "lm") +
-                labs(title = "Intron methylation vs Expression")
-plot_grid(all_scatt, prom_scatt, exon_scatt, intron_scatt, nrow = 2, ncol = 2)
+  geom_point() +
+  geom_smooth(method = "lm") +
+  labs(title = "Intron methylation vs Expression")
+print(plot_grid(all_scatt, prom_scatt, exon_scatt, intron_scatt, nrow = 2, ncol = 2))
 
 
 
@@ -748,10 +755,10 @@ sites_abs_fc_cor <- cor.test(
 
 # Adding to table
 final_table <- rbind(final_table,
-                     "Rho corr (sites vs |log2FC|)" = c(sites_abs_fc_cor$estimate, "/", "/", "/", "/", "/"),
-                     "p-value corr (sites vs |log2FC|)" = c(sites_abs_fc_cor$p.value, "/", "/", "/", "/", "/"),
-                     "Rho corr (sites vs log2FC)" = c(sites_fc_cor$estimate, "/", "/", "/", "/", "/"),
-                     "p-value corr (sites vs log2FC)" = c(sites_fc_cor$p.value, "/", "/", "/", "/", "/"))
+                     "Rho corr (sites vs |log2FC|)" = c(sites_abs_fc_cor$estimate, "/", "/", "/", "/"),
+                     "p-value corr (sites vs |log2FC|)" = c(sites_abs_fc_cor$p.value, "/", "/", "/", "/"),
+                     "Rho corr (sites vs log2FC)" = c(sites_fc_cor$estimate, "/", "/", "/", "/"),
+                     "p-value corr (sites vs log2FC)" = c(sites_fc_cor$p.value, "/", "/", "/", "/"))
 
 ## Graph 8: Scatter plot of number of DM sites vs log2FC ##
 #Magnitude
@@ -773,7 +780,18 @@ p_sites_fc <- ggplot(sites_fc_df, aes(x = n_DM_sites, y = log2FoldChange)) +
   theme_classic(base_size = 13) +
   theme(plot.title = element_text(face = "bold"))
 
-plot_grid(p_sites_fc_abs, p_sites_fc, nrow = 2, ncol = 1)
+print(plot_grid(p_sites_fc_abs, p_sites_fc, nrow = 2, ncol = 1))
 
+
+## Final outputs:
+write.csv(all_intersect_df, file = out_all, row.names = FALSE)
+write.csv(final_table, file = out_table, row.names = FALSE)
+write.csv(final_expr_table, file = out_expr_table, row.names = FALSE)
 
 dev.off()
+
+
+### Obtaining session info:
+sink(out_session)
+sessionInfo()
+sink()
