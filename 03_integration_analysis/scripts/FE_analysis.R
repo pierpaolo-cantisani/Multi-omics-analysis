@@ -90,18 +90,14 @@ ORA_all_BP <-  enrichGO(gene = sign_GO_genes,
                         pvalueCutoff = 0.05,
                         qvalueCutoff = 0.05)
 
-ORA_all_BP_simp <- simplify(ORA_all_BP, 
-                            cutoff = 0.8, 
-                            by = "p.adjust")
-
 
 #Visualizations:
-bar_all_RNA <- barplot(ORA_all_BP_simp, showCategory = 10, title = "RNA-Seq BP - ORA: all genes")
-dot_all_RNA <- dotplot(ORA_all_BP_simp, showCategory = 10, title = "RNA-Seq BP - ORA: all genes")
+bar_all_RNA <- barplot(ORA_all_BP, showCategory = 10, title = "RNA-Seq BP - ORA: all genes")
+dot_all_RNA <- dotplot(ORA_all_BP, showCategory = 10, title = "RNA-Seq BP - ORA: all genes")
 print(plot_grid(bar_all_RNA, dot_all_RNA, nrow = 1, ncol = 2))
 
 #Results:
-DE_terms  <- ORA_all_BP_simp@result %>% filter(p.adjust < 0.05) %>% dplyr::pull(ID)
+DE_terms  <- ORA_all_BP@result %>% filter(p.adjust < 0.05) %>% dplyr::pull(ID)
 
 
 
@@ -124,16 +120,12 @@ ORA_BS_all_BP <-  enrichGO(gene = DM_GO_genes,
                            pvalueCutoff = 0.05,
                            qvalueCutoff = 0.05)
 
-ORA_BS_all_BP_simp <- simplify(ORA_BS_all_BP, 
-                               cutoff = 0.8, 
-                               by = "p.adjust")
-
-bar_all_BS <- barplot(ORA_BS_all_BP_simp, showCategory = 10, title = "WGBS BP - ORA: all genes")
-dot_all_BS <- dotplot(ORA_BS_all_BP_simp, showCategory = 10, title = "WGBS BP - ORA: all genes")
+bar_all_BS <- barplot(ORA_BS_all_BP, showCategory = 10, title = "WGBS BP - ORA: all genes")
+dot_all_BS <- dotplot(ORA_BS_all_BP, showCategory = 10, title = "WGBS BP - ORA: all genes")
 print(plot_grid(bar_all_BS, dot_all_BS, nrow = 1, ncol = 2))
 
 #Results:
-DM_terms  <- ORA_BS_all_BP_simp@result %>% filter(p.adjust < 0.05) %>% pull(ID)
+DM_terms  <- ORA_BS_all_BP@result %>% filter(p.adjust < 0.05) %>% pull(ID)
 
 
 
@@ -164,8 +156,8 @@ print(plot(fit,
 
 ## Graph 2: Dotplot of top ranked shared terms
 shared_results <- bind_rows(
-  ORA_all_BP_simp@result   %>% filter(ID %in% common_DM_DE) %>% mutate(omic = "DE"),
-  ORA_BS_all_BP_simp@result %>% filter(ID %in% common_DM_DE) %>% mutate(omic = "DM")
+  ORA_all_BP@result   %>% filter(ID %in% common_DM_DE) %>% mutate(omic = "DE"),
+  ORA_BS_all_BP@result %>% filter(ID %in% common_DM_DE) %>% mutate(omic = "DM")
 )
 
 # Cleaning GeneRatio (From string "k/n", to [0,1])

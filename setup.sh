@@ -1,16 +1,5 @@
 #!/bin/bash
 
-### Creating conda environments ###
-
-#Environment for the preprocessing on bash:
-conda env create -f ~/Multi-omics-analysis/envs/rna_seq.yml
-#Environment for the DE analysis on R:
-conda env create -f ~/Multi-omics-analysis/envs/r_DE_analysis.yml
-#Environment for the DMR analysis on R:
-conda env create -f ~/Multi-omics-analysis/envs/r_DM_analysis.yml
-#Environment for the Integration and FE analyses on R:
-conda env create -f ~/Multi-omics-analysis/envs/r_integration_analysis.yml
-
 
 ### Creating directories ###
 mkdir -p ~/Multi-omics-analysis/01_rnaseq/{fastq,fastqc_results/not_trimmed,fastq_trimmed,fastqc_results/trimmed,salmon_output,references,DE_results}
@@ -24,6 +13,8 @@ mkdir -p ~/Multi-omics-analysis/03_integration_analysis/integration_results
 wget -P ~/Multi-omics-analysis/01_rnaseq/references/ \
   https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.transcripts.fa.gz
 
+#Environment for salmon:
+conda env create -f ~/Multi-omics-analysis/envs/rna_seq.yml
 #Activating "rna_seq" conda environment before:
 source activate rna_seq
 # Indexing
@@ -43,7 +34,7 @@ conda deactivate
 
 ### Downloading the reference for the DESeq2 analysis:
 wget -P ~/Multi-omics-analysis/01_rnaseq/references/ \
-  ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.annotation.gtf.gz
+  https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_49/gencode.v49.annotation.gtf.gz
 
 
 ### Donloading reference for the DMR analysis
