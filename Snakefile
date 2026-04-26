@@ -1,7 +1,7 @@
 #Snakefile
 
 #### !!Important:!!
-# Before running the Snakefile: run "setup.sh"
+# Before running the Snakefile: run "setup.sh" (see the README for more details)
 
 
 ### Global variables ###
