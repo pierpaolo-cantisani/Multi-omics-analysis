@@ -160,7 +160,7 @@ dependencies:
   - r-cpp11=0.5.2
   - r-crayon=1.5.3
   - r-curl=7.0.0
-  - r-data.table=1.17.8
+  - r-data.table=1.15.4
   - r-dbi=1.2.3
   - r-dbplyr=2.5.1
   - r-digest=0.6.37

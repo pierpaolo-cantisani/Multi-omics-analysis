@@ -43,8 +43,8 @@ universe <- intersect(na.omit(DE_res$SYMBOL),
 
 
 # Final genes ready for comparison are:
-DE_genes <- unique(DE_res$SYMBOL)  # 4144 DE genes
-DM_genes <- unique(DM_sites$SYMBOL)    # 277 genes with DM sites
+DE_genes <- unique(DE_res$SYMBOL)
+DM_genes <- unique(DM_sites$SYMBOL) 
 
 # All genes annotated in the database:
 all_symbols <- keys(org.Hs.eg.db, keytype = "SYMBOL")
@@ -57,8 +57,6 @@ all_symbols <- keys(org.Hs.eg.db, keytype = "SYMBOL")
 
 ##DE analysis resulted in a large number of extremely significant genes, and the number of sample of this experiment isn't very high. 
 ##Therefore, Over Representation Analysis (ORA) is expected to be the most coherent choice for FE analysis, and will be the primary tool in this case.
-##A GSEA will also be performed only as a confirmatory tool, and to add information on weaker phenomena. It must therefore be considered to be less significant.
-
 
 ##ORA (ClusterProfiler)
 #Defining the background
@@ -73,7 +71,6 @@ sum(novel)
 #The ones that have an "ENSG" hugo symbol are novel/unmapped genes. Therefore they can be discarded. 
 #The other genes must be further analyzed
 missing <- not_in_symbol[!novel ,]
-print(missing$SYMBOL)
 #If these are all ncRNAs, they can be discarded too.
 
 #Now checking how many of the significantly DE genes remain after discarding novel genes and ncRNAs
@@ -110,7 +107,7 @@ background_BS <- unique(WGBS_universe$SYMBOL)
 mapped_symbols_BS <- intersect(background_BS, all_symbols)
 #Final lists:
 DM_GO_genes <- intersect(DM_sites$SYMBOL, all_symbols)           # This will be the gene set for ORA
-background_BS <- mapped_symbols_BS                                     # This will be the background for ORA
+background_BS <- mapped_symbols_BS                               # This will be the background for ORA
 
 ORA_BS_all_BP <-  enrichGO(gene = DM_GO_genes,       
                            universe = background_BS,        
