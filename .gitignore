@@ -15,6 +15,8 @@ dataset/
 # Low relevance files
 *fastp.html
 *fastp.json
+01_rnaseq/scripts/pipeline_bash.sh
+02_rnaseq/scripts/setup_and_bash_pipeline.sh
 
 # History files
 .Rhistory
