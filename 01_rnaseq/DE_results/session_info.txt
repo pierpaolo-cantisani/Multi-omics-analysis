@@ -3,7 +3,7 @@ Platform: x86_64-conda-linux-gnu (64-bit)
 Running under: Ubuntu 24.04.3 LTS
 
 Matrix products: default
-BLAS/LAPACK: /home/ubuntu/Multi-omics-analysis/01_rnaseq/.snakemake/conda/a6bdee57f87f04b042a158868955ae97_/lib/libopenblasp-r0.3.32.so;  LAPACK version 3.12.0
+BLAS/LAPACK: /home/ubuntu/Multi-omics-analysis/.snakemake/conda/ad8b97600acd4814c06f48bd43b9037f_/lib/libopenblasp-r0.3.32.so;  LAPACK version 3.12.0
 
 locale:
  [1] LC_CTYPE=C.UTF-8       LC_NUMERIC=C           LC_TIME=C.UTF-8       

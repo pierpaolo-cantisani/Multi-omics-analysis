@@ -1,0 +1,13 @@
+Module	Section	Sample Name	Source
+FastQC	all_sections	sample_1	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_1_trimmed_fastqc.zip
+FastQC	all_sections	sample_2	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_2_trimmed_fastqc.zip
+FastQC	all_sections	sample_3	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_3_trimmed_fastqc.zip
+FastQC	all_sections	sample_4	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_4_trimmed_fastqc.zip
+FastQC	all_sections	sample_5	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_5_trimmed_fastqc.zip
+FastQC	all_sections	sample_6	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_6_trimmed_fastqc.zip
+FastQC	all_sections	sample_7	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_7_trimmed_fastqc.zip
+FastQC	all_sections	sample_8	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_8_trimmed_fastqc.zip
+FastQC	all_sections	sample_9	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_9_trimmed_fastqc.zip
+FastQC	all_sections	sample_10	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_10_trimmed_fastqc.zip
+FastQC	all_sections	sample_11	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_11_trimmed_fastqc.zip
+FastQC	all_sections	sample_12	/home/ubuntu/Multi-omics-analysis/01_rnaseq/fastqc_results/trimmed/sample_12_trimmed_fastqc.zip
