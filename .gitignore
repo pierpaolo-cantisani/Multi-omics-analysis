@@ -5,7 +5,7 @@ salmon_output/
 references/
 trimmed/
 not_trimmed/
-trimmed_data*/
+trimmed_data/
 dataset/
 
 # Heavy files
