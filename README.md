@@ -96,7 +96,7 @@ Multi-omics-analysis/
 ## Requirements
 
 - [Snakemake](https://snakemake.readthedocs.io/) ≥ 7.0
-- [Conda](https://docs.conda.io/) / [Mamba](https://mamba.readthedocs.io/) (recommended)
+- [Conda](https://docs.conda.io/)
 - Internet access for reference downloads and SRA data retrieval
 
 All bioinformatics tools (FastQC, MultiQC, fastp, Salmon, SRA-toolkit, R packages) are managed automatically through the Conda environments defined in `envs/`.
@@ -177,7 +177,7 @@ The bisulfite sequencing data (6 paired donors, TB vs NI) are already pre-proces
 | Coordinate conversion | rtracklayer | LiftOver from hg19 → hg38 |
 | Annotation | ChIPseeker | Genomic annotation relative to TSS (promoter: −2000 to +200 bp) using TxDb hg38 |
 
-**Visualizations produced:** methylation/coverage stats, hierarchical clustering dendrogram, PCA, volcano plot, annotation barplot, pie chart, distance-to-TSS plot.
+**Visualizations produced:** methylation/coverage stats, hierarchical clustering dendrogram, PCA, volcano plot, annotation barplot, pie chart, distance-to-TSS plot, distribution of DM sites on all chromosomes.
 
 ---
 
@@ -231,8 +231,9 @@ Over-Representation Analysis (ORA) on Biological Process (BP) GO terms, performe
 | `01_rnaseq/DE_results/session_info.txt` | R session info |
 | `02_wgbs/DM_results/DM_sites.csv` | Significant DM sites (qvalue < 0.01, \|meth.diff\| > 25%) with genomic annotation |
 | `02_wgbs/DM_results/WGBS_universe.csv` | All covered gene universe |
-| `02_wgbs/DM_results/WGBS Graphs.pdf` | All WGBS exploratory and DM visualizations |
+| `02_wgbs/DM_results/WGBS Graphs.pdf` | WGBS exploratory and DM visualizations |
 | `02_wgbs/DM_results/session_info.txt` | R session info |
+| `02_wgbs/DM_results/Chr DM distribution.pdf` | Distribution of DM sites on chromosomes |
 | `03_integration_analysis/integration_results/All_intersecting_genes.csv` | Full DE ∩ DM intersection table |
 | `03_integration_analysis/integration_results/Statistics_table.csv` | Integration statistical results (by region) |
 | `03_integration_analysis/integration_results/Statistics_expr_table.csv` | Expression directionality statistics |
