@@ -118,8 +118,9 @@ This script performs the following steps:
 3. Builds the **Salmon index** for hg38 (GENCODE v49) using the `rna_seq` Conda environment
 4. Downloads the **hg19→hg38 liftOver chain** file required for coordinate conversion in the WGBS analysis
 
-> !! The Salmon indexing step requires the `rna_seq` Conda environment to be available. The script creates it automatically from `envs/rna_seq.yml` before indexing.
-> Conda activation may not work within the scripts: in that case it is better to activate the environment directly with "> conda activate rna_seq", and then run the download parts of "setup.sh".
+> !! The Salmon indexing step requires the `rna_seq` conda environment to be available. The script creates it automatically from `envs/rna_seq.yml` before indexing.
+
+> !! Conda activation may not work within the script: in that case it is better to activate the environment directly ("conda activate rna_seq"), and then indipendently run the downloads found in "setup.sh".
 
 ---
 
@@ -132,7 +133,7 @@ After setup, launch the full pipeline from the project root:
 snakemake -n --use-conda
 
 # Full run (adjust --cores as needed)
-snakemake --use-conda --cores 4
+snakemake --use-conda --cores 2
 ```
 
 Snakemake will automatically resolve dependencies and execute rules in the correct order, activating the appropriate Conda environment for each step.
@@ -165,7 +166,7 @@ Snakemake will automatically resolve dependencies and execute rules in the corre
 **Script:** `02_wgbs/scripts/DMR_analysis.R`  
 **Environment:** `envs/r_DM_analysis.yml`
 
-The bisulfite sequencing data (6 paired donors, TB vs NI) are already pre-processed and methylation-called (GEO accession GSE63409). Input files contain four columns: chromosome, position, methylated counts (M), and total coverage (M+U).
+The bisulfite sequencing data (6 paired donors, TB vs NI) are already pre-processed and methylation-called (GEO accession GSE64177). Input files contain four columns: chromosome, position, methylated counts (M), and total coverage (M+U).
 
 | Step | Tool | Description |
 |------|------|-------------|
@@ -190,7 +191,10 @@ The bisulfite sequencing data (6 paired donors, TB vs NI) are already pre-proces
 
 Intersects DE genes and DM genes (restricted to a shared universe of genes present in both analyses). The analysis is stratified by genomic region (promoter, exon, intron, 3′ UTR; intergenic sites are excluded from the primary intersection).
 
+> !! This project is part of a larger benchmarking study evaluating different strategies for integrating differential methylation (DM) and differential expression (DE) data. The integration method used here is intentionally simple, considering only the overlap between DM and DE gene lists — it is not designed to be the most powerful or biologically comprehensive approach. What makes it relevant is the statistical analysis applied to the resulting gene list: the same analyses will be applied across all integration methods in the study, making this baseline a consistent reference point for comparison.
+
 Statistical questions addressed (hypergeometric tests and Spearman correlations):
+
 
 | Question | Test |
 |----------|------|

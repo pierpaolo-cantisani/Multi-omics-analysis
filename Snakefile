@@ -30,7 +30,7 @@ rule all:
         "02_wgbs/DM_results/WGBS Graphs.pdf",
         "02_wgbs/DM_results/session_info.txt",
         "02_wgbs/DM_results/WGBS_universe.csv",
-        "02_wgbs/DM_results/Chr DM distribution.csv",
+        "02_wgbs/DM_results/Chr DM distribution.pdf",
         "03_integration_analysis/integration_results/All_intersecting_genes.csv",
         "03_integration_analysis/integration_results/Integration analysis Graphs.pdf",
         "03_integration_analysis/integration_results/Statistics_table.csv",
@@ -216,7 +216,7 @@ rule wgbs_analysis:
         "02_wgbs/DM_results/WGBS Graphs.pdf",
         "02_wgbs/DM_results/session_info.txt",
         "02_wgbs/DM_results/WGBS_universe.csv",
-        "02_wgbs/DM_results/Chr DM distribution.csv"
+        "02_wgbs/DM_results/Chr DM distribution.pdf"
     conda:
         "envs/r_DM_analysis.yml"
     script:
