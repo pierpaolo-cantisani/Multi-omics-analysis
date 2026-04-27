@@ -6,6 +6,9 @@ library(rtracklayer)
 library(ChIPseeker)
 library(TxDb.Hsapiens.UCSC.hg38.knownGene)
 library(org.Hs.eg.db)
+library(GenomeInfoDb)
+library(karyoploteR)
+
 
 #Connecting to snakeake inputs and outputs:
 files <- unlist(snakemake@input)
@@ -13,9 +16,10 @@ out_csv <- snakemake@output[[1]]
 out_pdf <- snakemake@output[[2]]
 out_session <- snakemake@output[[3]]
 out_universe <- snakemake@output[[4]]
+out_pdf_2 <- snakemake@output[[5]]
 
 #Opening pdf with graphs
-pdf(out_pdf)
+pdf(out_pdf, width = 12, height = 8)
 
 ### 1. File downloading, and MethylKit object building ###
 
@@ -171,6 +175,26 @@ print(plotDistToTSS(peakAnno) +
         ggtitle("Distance of DM sites to nearest TSS"))
 
 
+## Graph: Position of methylation sites on all chromosomes
+## Checking if their position is clusterized around centromeres. Then considering filtering
+
+# Recreating the GRanges object, this time with gene names
+myDiff_25_GR_full <- makeGRangesFromDataFrame(peakAnno_df,
+                                              keep.extra.columns = TRUE,
+                                              seqnames.field = "seqnames",
+                                              start.field    = "start",
+                                              end.field      = "end")
+seqlevelsStyle(myDiff_25_GR_full) <- "UCSC"
+
+dev.off()
+pdf(out_pdf_2, width = 12, height = 8)
+
+kp <- plotKaryotype(genome="hg38")
+kp <- kpPlotDensity(kp, myDiff_25_GR_full)
+
+dev.off()
+
+
 #Creating the final dataframe for export:
 GR_df <- as.data.frame(myDiff25p_GR_hg38)
 peakAnno_df <- as.data.frame(peakAnno)
@@ -204,8 +228,6 @@ WGBS_universe <- na.omit(unique(data.frame("SYMBOL" = myDiff_Anno_df$SYMBOL)))
 
 #Exporting the universe:
 write.csv(WGBS_universe, out_universe, row.names = FALSE)
-
-dev.off()
 
 
 ### Obtaining session info:
