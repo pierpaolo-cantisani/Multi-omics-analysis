@@ -179,6 +179,7 @@ print(plotDistToTSS(peakAnno) +
 ## Checking if their position is clusterized around centromeres. Then considering filtering
 
 # Recreating the GRanges object, this time with gene names
+peakAnno_df <- as.data.frame(peakAnno)
 myDiff_25_GR_full <- makeGRangesFromDataFrame(peakAnno_df,
                                               keep.extra.columns = TRUE,
                                               seqnames.field = "seqnames",
@@ -197,7 +198,6 @@ dev.off()
 
 #Creating the final dataframe for export:
 GR_df <- as.data.frame(myDiff25p_GR_hg38)
-peakAnno_df <- as.data.frame(peakAnno)
 
 final_df <- cbind(                                                             #order is garanteed, as peakAnno comes from mydiff25p_GR
   GR_df[, c("seqnames", "start", "end", "pvalue", "qvalue", "meth.diff")],
